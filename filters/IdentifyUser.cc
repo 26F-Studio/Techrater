@@ -4,7 +4,7 @@
 
 #include <filters/IdentifyUser.h>
 #include <helpers/ResponseJson.h>
-#include <plugins/NodeMaintainer.h>
+#include <plugins/PlayerManager.h>
 #include <structures/Exceptions.h>
 #include <types/ResultCode.h>
 
@@ -21,7 +21,7 @@ void IdentifyUser::doFilter(
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
 ) {
-    auto accessToken = req->getHeader("x-access-token");
+    auto accessToken = req->attributes()->get<string>("accessToken");
     if (accessToken.empty()) {
         ResponseJson response;
         response.setStatusCode(k400BadRequest);
@@ -31,22 +31,12 @@ void IdentifyUser::doFilter(
         return;
     }
     try {
-        int64_t id{};
-        if (app().getPlugin<NodeMaintainer>()->checkAccessToken(accessToken, id) != k200OK) {
-            ResponseJson response;
-            response.setStatusCode(k401Unauthorized);
-            response.setResultCode(ResultCode::NotAcceptable);
-            response.setMessage(i18n("invalidAccessToken"));
-            response.httpCallback(failedCb);
-            return;
-        }
+        int64_t id = app().getPlugin<PlayerManager>()->getUserId(accessToken);
         req->attributes()->insert("id", id);
-    } catch (const NetworkException &e) {
+    } catch (const ResponseException &e) {
         ResponseJson response;
-        response.setStatusCode(k503ServiceUnavailable);
-        response.setResultCode(ResultCode::NotAvailable);
-        response.setMessage(i18n("notAvailable"));
-        response.setReason(e);
+        response.setStatusCode(e.statusCode());
+        response(e.toJson());
         response.httpCallback(failedCb);
         return;
     }

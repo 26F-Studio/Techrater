@@ -12,7 +12,7 @@ namespace techmino::helpers {
     public:
         I18nHelper() {
             using namespace std;
-            _basename = move(T::projectName + "."s);
+            _basename = std::move(T::projectName + "."s);
             string typeName(typeid(T).name());
 #ifdef __GNUC__
             typeName.erase(0, typeName.find_last_of("0123456789") + 1);

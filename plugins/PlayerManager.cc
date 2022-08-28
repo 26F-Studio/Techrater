@@ -64,7 +64,7 @@ void PlayerManager::initAndStart(const Json::Value &config) {
         abort();
     }
 
-    _userRedis = make_unique<PlayerRedis>(move(PlayerRedis(
+    _userRedis = make_unique<PlayerRedis>(std::move(PlayerRedis(
             {
                     chrono::minutes(config["redis"]["expirations"]["refresh"].asInt64()),
                     chrono::minutes(config["redis"]["expirations"]["access"].asInt64()),
@@ -110,7 +110,7 @@ int64_t PlayerManager::getUserId(const string &accessToken) {
 
 RedisToken PlayerManager::refresh(const string &refreshToken) {
     try {
-        return move(_userRedis->refresh(refreshToken));
+        return std::move(_userRedis->refresh(refreshToken));
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
@@ -143,7 +143,7 @@ void PlayerManager::verifyPhone(const string &phone) {
     _userRedis->setPhoneCode(phone, code);
     throw ResponseException(
             i18n("notImplemented"),
-            ResultCode::internalError,
+            ResultCode::InternalError,
             k501NotImplemented
     );
 }
@@ -154,25 +154,25 @@ tuple<RedisToken, bool> PlayerManager::loginEmailCode(
 ) {
     _checkEmailCode(email, code);
 
-    techmino::Users user;
-    if (_usersMapper->count(orm::Criteria(
-            techmino::Users::Cols::_email,
+    techrater::Player player;
+    if (_playerMapper->count(orm::Criteria(
+            techrater::Player::Cols::_email,
             orm::CompareOperator::EQ,
             email
     )) == 0) {
-        user.setEmail(email);
-        _usersMapper->insert(user);
+        player.setEmail(email);
+        _playerMapper->insert(player);
     } else {
-        user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_email,
+        player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
         ));
     }
 
     return {
-            _userRedis->generateTokens(to_string(user.getValueOfId())),
-            user.getPassword() == nullptr
+            _userRedis->generateTokens(to_string(player.getValueOfId())),
+            player.getPasswordHash() == nullptr
     };
 }
 
@@ -182,57 +182,55 @@ tuple<RedisToken, bool> PlayerManager::loginPhoneCode(
 ) {
     _checkPhoneCode(phone, code);
 
-    techmino::Users user;
-    if (_usersMapper->count(orm::Criteria(
-            techmino::Users::Cols::_phone,
+    techrater::Player player;
+    if (_playerMapper->count(orm::Criteria(
+            techrater::Player::Cols::_phone,
             orm::CompareOperator::EQ,
             phone
     )) == 0) {
-        user.setPhone(phone);
-        _usersMapper->insert(user);
+        player.setPhone(phone);
+        _playerMapper->insert(player);
     } else {
-        user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_phone,
+        player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_phone,
                 orm::CompareOperator::EQ,
                 phone
         ));
     }
 
     return {
-            _userRedis->generateTokens(to_string(user.getValueOfId())),
-            user.getPassword() == nullptr
+            _userRedis->generateTokens(to_string(player.getValueOfId())),
+            player.getPasswordHash() == nullptr
     };
 }
 
-RedisToken PlayerManager::loginEmailPassword(
-        const string &email,
-        const string &password
-) {
+RedisToken PlayerManager::loginEmailPassword(const string &email,const string &password) {
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_email,
+        // TODO: Implement hash function
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
         ) && orm::Criteria(
-                techmino::Users::Cols::_password,
+                techrater::Player::Cols::_password,
                 orm::CompareOperator::EQ,
                 password
         ));
 
-        if (user.getValueOfPassword().empty()) {
+        if (player.getPasswordHash() == nullptr) {
             throw ResponseException(
                     i18n("noPassword"),
-                    ResultCode::nullValue,
+                    ResultCode::NullValue,
                     k403Forbidden
             );
         }
 
-        return _userRedis->generateTokens(to_string(user.getValueOfId()));
+        return _userRedis->generateTokens(to_string(player.getValueOfId()));
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("invalidEmailPass"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k403Forbidden
         );
     }
@@ -240,30 +238,31 @@ RedisToken PlayerManager::loginEmailPassword(
 
 RedisToken PlayerManager::loginPhonePassword(const string &phone, const string &password) {
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_phone,
+        // TODO: Implement hash function
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_phone,
                 orm::CompareOperator::EQ,
                 phone
         ) && orm::Criteria(
-                techmino::Users::Cols::_password,
+                techrater::Player::Cols::_password,
                 orm::CompareOperator::EQ,
                 password
         ));
 
-        if (user.getValueOfPassword().empty()) {
+        if (player.getPasswordHash() == nullptr) {
             throw ResponseException(
                     i18n("noPassword"),
-                    ResultCode::nullValue,
+                    ResultCode::NullValue,
                     k403Forbidden
             );
         }
 
-        return _userRedis->generateTokens(to_string(user.getValueOfId()));
+        return _userRedis->generateTokens(to_string(player.getValueOfId()));
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("invalidEmailPass"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k403Forbidden
         );
     }
@@ -277,18 +276,19 @@ void PlayerManager::resetEmail(
     _checkEmailCode(email, code);
 
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_email,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
         ));
-        user.setPassword(newPassword);
-        _usersMapper->update(user);
+        // TODO: Implement hash function
+        player.setPassword(newPassword);
+        _playerMapper->update(player);
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -302,18 +302,19 @@ void PlayerManager::resetPhone(
     _checkPhoneCode(phone, code);
 
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_phone,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_phone,
                 orm::CompareOperator::EQ,
                 phone
         ));
-        user.setPassword(newPassword);
-        _usersMapper->update(user);
+        // TODO: Implement hash function
+        player.setPassword(newPassword);
+        _playerMapper->update(player);
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -327,39 +328,39 @@ void PlayerManager::migrateEmail(
     _checkEmailCode(newEmail, code);
 
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 _userRedis->getIdByAccessToken(accessToken)
         ));
-        if (user.getValueOfEmail() == newEmail) {
+        if (player.getValueOfEmail() == newEmail) {
             return;
         }
-        if (_usersMapper->count(orm::Criteria(
-                techmino::Users::Cols::_email,
+        if (_playerMapper->count(orm::Criteria(
+                techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 newEmail
         ))) {
             throw ResponseException(
                     i18n("emailExists"),
-                    ResultCode::conflict,
+                    ResultCode::Conflict,
                     k409Conflict
             );
         }
-        user.setEmail(newEmail);
-        _usersMapper->update(user);
+        player.setEmail(newEmail);
+        _playerMapper->update(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k401Unauthorized
         );
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -373,39 +374,39 @@ void PlayerManager::migratePhone(
     _checkPhoneCode(newPhone, code);
 
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 _userRedis->getIdByAccessToken(accessToken)
         ));
-        if (user.getValueOfPhone() == newPhone) {
+        if (player.getValueOfPhone() == newPhone) {
             return;
         }
-        if (_usersMapper->count(orm::Criteria(
-                techmino::Users::Cols::_phone,
+        if (_playerMapper->count(orm::Criteria(
+                techrater::Player::Cols::_phone,
                 orm::CompareOperator::EQ,
                 newPhone
         ))) {
             throw ResponseException(
                     i18n("emailExists"),
-                    ResultCode::conflict,
+                    ResultCode::Conflict,
                     k409Conflict
             );
         }
-        user.setPhone(newPhone);
-        _usersMapper->update(user);
+        player.setPhone(newPhone);
+        _playerMapper->update(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k401Unauthorized
         );
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -413,26 +414,26 @@ void PlayerManager::migratePhone(
 
 void PlayerManager::deactivateEmail(const string &accessToken, const string &code) {
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 _userRedis->getIdByAccessToken(accessToken)
         ));
-        _checkEmailCode(user.getValueOfEmail(), code);
+        _checkEmailCode(player.getValueOfEmail(), code);
 
-        _usersMapper->deleteOne(user);
+        _playerMapper->deleteOne(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k401Unauthorized
         );
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -440,26 +441,26 @@ void PlayerManager::deactivateEmail(const string &accessToken, const string &cod
 
 void PlayerManager::deactivatePhone(const string &accessToken, const string &code) {
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 _userRedis->getIdByAccessToken(accessToken)
         ));
-        _checkPhoneCode(user.getValueOfPhone(), code);
+        _checkPhoneCode(player.getValueOfPhone(), code);
 
-        _usersMapper->deleteOne(user);
+        _playerMapper->deleteOne(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
-                ResultCode::notAcceptable,
+                ResultCode::NotAcceptable,
                 k401Unauthorized
         );
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -471,36 +472,23 @@ Json::Value PlayerManager::getUserInfo(const string &accessToken, int64_t userId
             targetId = _userRedis->getIdByAccessToken(accessToken);
     )
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 targetId
         )).toJson();
-        user.removeMember("password");
-        user.removeMember("avatar");
+        player.removeMember("password");
+        player.removeMember("avatar");
         if (userId > 0) {
-            user.removeMember("email");
-            user.removeMember("phone");
+            player.removeMember("email");
+            player.removeMember("phone");
         }
-
-        const auto statistics = _userRedis->getStatistics(to_string(targetId));
-        user["statistics"] = statistics;
-        user["statistics"]["collections"] = _collectionMapper->count(orm::Criteria(
-                techmino::Collection::Cols::_creator,
-                orm::CompareOperator::EQ,
-                targetId
-        ));
-        user["statistics"]["posts"] = _dataMapper->count(orm::Criteria(
-                techmino::Data::Cols::_creator,
-                orm::CompareOperator::EQ,
-                targetId
-        ));
-        return user;
+        return player;
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -508,16 +496,16 @@ Json::Value PlayerManager::getUserInfo(const string &accessToken, int64_t userId
 
 void PlayerManager::updateUserInfo(const string &accessToken, RequestJson request) {
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 getUserId(accessToken)
         ));
-        if (user.getValueOfPassword().empty()) {
+        if (player.getPasswordHash() == nullptr) {
             if (!request.check("password", JsonValue::String)) {
                 throw ResponseException(
                         i18n("noPassword"),
-                        ResultCode::nullValue,
+                        ResultCode::NullValue,
                         k403Forbidden
                 );
             }
@@ -525,15 +513,15 @@ void PlayerManager::updateUserInfo(const string &accessToken, RequestJson reques
             request.remove("password");
         }
         if (request.check("avatar", JsonValue::String)) {
-            user.setAvatarHash(crypto::blake2B(request["avatar"].asString()));
+            player.setAvatarHash(crypto::blake2B(request["avatar"].asString()));
         }
-        user.updateByJson(request.ref());
-        _usersMapper->update(user);
+        player.updateByJson(request.ref());
+        _playerMapper->update(player);
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -545,69 +533,20 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
             targetId = _userRedis->getIdByAccessToken(accessToken);
     )
     try {
-        auto user = _usersMapper->findOne(orm::Criteria(
-                techmino::Users::Cols::_id,
+        auto player = _playerMapper->findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 targetId
         ));
-        return user.getValueOfAvatar();
+        return player.getValueOfAvatar();
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("userNotFound"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
-}
-
-Json::Value PlayerManager::getFollows(const string &accessToken, int64_t userId) {
-    int64_t targetId = userId;
-    NO_EXCEPTION(
-            targetId = _userRedis->getIdByAccessToken(accessToken);
-    )
-    try {
-        return _userRedis->getFollows(to_string(targetId));
-    } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::notFound,
-                k404NotFound
-        );
-    }
-}
-
-bool PlayerManager::follow(const string &accessToken, int64_t followId) {
-    return _userRedis->follow(
-            to_string(getUserId(accessToken)),
-            to_string(followId)
-    );
-}
-
-Json::Value PlayerManager::getStarred(const string &accessToken, int64_t userId) {
-    int64_t targetId = userId;
-    NO_EXCEPTION(
-            targetId = _userRedis->getIdByAccessToken(accessToken);
-    )
-    try {
-        return _userRedis->getStarred(to_string(targetId));
-    } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::notFound,
-                k404NotFound
-        );
-    }
-}
-
-void PlayerManager::dataStar(int64_t userId, int64_t dataId) const {
-    _userRedis->dataStar(to_string(userId), to_string(dataId));
-}
-
-void PlayerManager::collectionStar(int64_t userId, int64_t collectionId) const {
-    _userRedis->collectionStar(to_string(userId), to_string(collectionId));
 }
 
 bool PlayerManager::ipLimit(const string &ip) const {
@@ -639,7 +578,7 @@ void PlayerManager::_checkEmailCode(const string &email, const string &code) {
         if (!_userRedis->checkEmailCode(email, code)) {
             throw ResponseException(
                     i18n("invalidCode"),
-                    ResultCode::notAcceptable,
+                    ResultCode::NotAcceptable,
                     k403Forbidden
             );
         }
@@ -648,7 +587,7 @@ void PlayerManager::_checkEmailCode(const string &email, const string &code) {
         LOG_DEBUG << "Key not found: " << e.what();
         throw ResponseException(
                 i18n("invalidEmail"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }
@@ -659,7 +598,7 @@ void PlayerManager::_checkPhoneCode(const string &phone, const string &code) {
         if (!_userRedis->checkPhoneCode(phone, code)) {
             throw ResponseException(
                     i18n("invalidCode"),
-                    ResultCode::notAcceptable,
+                    ResultCode::NotAcceptable,
                     k403Forbidden
             );
         }
@@ -668,7 +607,7 @@ void PlayerManager::_checkPhoneCode(const string &phone, const string &code) {
         LOG_DEBUG << "Key not found: " << e.what();
         throw ResponseException(
                 i18n("invalidEmail"),
-                ResultCode::notFound,
+                ResultCode::NotFound,
                 k404NotFound
         );
     }

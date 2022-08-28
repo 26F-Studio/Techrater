@@ -53,6 +53,7 @@ class Player
         static const std::string _permission;
         static const std::string _password_hash;
         static const std::string _email;
+        static const std::string _phone;
     };
 
     const static int primaryKeyNumber;
@@ -206,8 +207,18 @@ class Player
     void setEmail(std::string &&pEmail) noexcept;
     void setEmailToNull() noexcept;
 
+    /**  For column phone  */
+    ///Get the value of the column phone, returns the default value if the column is null
+    const std::string &getValueOfPhone() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getPhone() const noexcept;
+    ///Set the value of the column phone
+    void setPhone(const std::string &pPhone) noexcept;
+    void setPhone(std::string &&pPhone) noexcept;
+    void setPhoneToNull() noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 11;  }
+
+    static size_t getColumnNumber() noexcept {  return 12;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -235,6 +246,7 @@ class Player
     std::shared_ptr<std::string> permission_;
     std::shared_ptr<std::string> passwordHash_;
     std::shared_ptr<std::string> email_;
+    std::shared_ptr<std::string> phone_;
     struct MetaData
     {
         const std::string colName_;
@@ -246,7 +258,7 @@ class Player
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[11]={ false };
+    bool dirtyFlag_[12]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -318,6 +330,11 @@ class Player
         if(dirtyFlag_[10])
         {
             sql += "email,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[11])
+        {
+            sql += "phone,";
             ++parametersCount;
         }
         needSelection=true;
@@ -395,6 +412,11 @@ class Player
             sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[10])
+        {
+            n = sprintf(placeholderStr,"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        if(dirtyFlag_[11])
         {
             n = sprintf(placeholderStr,"$%d,",placeholder++);
             sql.append(placeholderStr, n);

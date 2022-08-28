@@ -84,16 +84,6 @@ namespace techmino::plugins {
 
         [[nodiscard]] std::string getAvatar(const std::string &accessToken, int64_t userId);
 
-        Json::Value getFollows(const std::string &accessToken, int64_t userId);
-
-        bool follow(const std::string &accessToken, int64_t followId);
-
-        Json::Value getStarred(const std::string &accessToken, int64_t userId);
-
-        void dataStar(int64_t userId, int64_t dataId) const;
-
-        void collectionStar(int64_t userId, int64_t collectionId) const;
-
         [[nodiscard]] bool ipLimit(const std::string &ip) const;
 
         [[nodiscard]] bool emailLimit(const std::string &email) const;
