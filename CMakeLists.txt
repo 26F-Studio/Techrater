@@ -5,6 +5,8 @@ set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems
 
 project(Techrater CXX)
 
+add_compile_definitions(CMAKE_PROJECT_NAME="${PROJECT_NAME}")
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message(STATUS "Compiler is Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
