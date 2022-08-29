@@ -60,6 +60,10 @@ MessageException::MessageException(
         bool error
 ) : BaseException(move(message)), error(error) {}
 
+EmailException::EmailException(
+        string message
+) : BaseException(move(message)) {}
+
 json_exception::InvalidFormat::InvalidFormat(std::string message) :
         BaseException(move(message)) {}
 

@@ -11,7 +11,7 @@
 #include <plugins/HandlerManager.h>
 #include <plugins/RoomManager.h>
 
-namespace techmino::ws::v2 {
+namespace techmino::ws::v1 {
     class Websocket :
             public BaseWebsocket<Websocket, plugins::HandlerManager>,
             public helpers::I18nHelper<Websocket> {

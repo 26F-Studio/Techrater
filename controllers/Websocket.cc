@@ -13,7 +13,7 @@ using namespace std;
 using namespace techmino::helpers;
 using namespace techmino::plugins;
 using namespace techmino::structures;
-using namespace techmino::ws::v2;
+using namespace techmino::ws::v1;
 using namespace techmino::types;
 
 Websocket::Websocket() :

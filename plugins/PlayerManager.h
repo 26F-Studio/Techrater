@@ -30,6 +30,10 @@ namespace techmino::plugins {
 
         void verifyPhone(const std::string &phone);
 
+        std::string seedEmail(const std::string &email);
+
+        std::string seedPhone(const std::string &phone);
+
         [[nodiscard]] std::tuple<structures::RedisToken, bool> loginEmailCode(
                 const std::string &email,
                 const std::string &code

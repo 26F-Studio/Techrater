@@ -82,6 +82,11 @@ namespace techmino::structures {
         std::atomic<bool> error;
     };
 
+    class EmailException : public internal::BaseException {
+    public:
+        explicit EmailException(std::string message);
+    };
+
     namespace json_exception {
         class InvalidFormat : public internal::BaseException {
         public:
