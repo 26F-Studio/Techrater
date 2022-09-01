@@ -8,19 +8,16 @@
 #include <helpers/I18nHelper.h>
 
 /**
- * @brief This filter sends header "x-access-token" to User node and set attribute "playerId"
- * @param x-access-token: in header
- * @return playerId: int64_t
+ * @brief This filter limits request rate from specific email address
+ * @param email: String
  */
-
 namespace techmino::filters {
-    class CheckAccessToken :
-            public drogon::HttpFilter<CheckAccessToken, false>,
-            public helpers::I18nHelper<CheckAccessToken> {
+    class LimitEmail :
+            public drogon::HttpFilter<LimitEmail>,
+            public helpers::I18nHelper<LimitEmail> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
-    public:
         void doFilter(
                 const drogon::HttpRequestPtr &req,
                 drogon::FilterCallback &&failedCb,

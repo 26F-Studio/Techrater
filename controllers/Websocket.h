@@ -5,7 +5,7 @@
 #pragma once
 
 #include <controllers/BaseWebsocket.h>
-#include <filters/IdentifyUser.h>
+#include <filters/CheckAccessToken.h>
 #include <helpers/I18nHelper.h>
 #include <plugins/ConnectionManager.h>
 #include <plugins/HandlerManager.h>
@@ -20,7 +20,7 @@ namespace techmino::ws::v1 {
 
     public:
         WS_PATH_LIST_BEGIN
-            WS_PATH_ADD("/tech/ws/v2", "techmino::filters::IdentifyUser")
+            WS_PATH_ADD("/tech/ws/v2", "techmino::filters::CheckAccessToken")
         WS_PATH_LIST_END
 
         Websocket();

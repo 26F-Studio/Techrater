@@ -58,36 +58,39 @@ namespace techmino::structures {
         ~RequestJsonHandler() override = default;
     };
 
-    class ResponseJsonHandler {
-    private:
-        using ResponseExceptionHandler = std::function<void(const ResponseException &, helpers::ResponseJson &)>;
-        using DbExceptionHandler = std::function<void(const drogon::orm::DrogonDbException &, helpers::ResponseJson &)>;
-        using GenericExceptionHandler = std::function<void(const std::exception &, helpers::ResponseJson &)>;
-
+    template<class T>
+    class ResponseJsonHandler : public helpers::I18nHelper<T> {
     public:
-        ResponseJsonHandler() = delete;
-
-        ResponseJsonHandler(const ResponseJsonHandler &) = delete;
-
-        ResponseJsonHandler(ResponseJsonHandler &&) = delete;
-
-        ResponseJsonHandler(
-                ResponseExceptionHandler responseExceptionHandler,
-                DbExceptionHandler dbExceptionHandler,
-                GenericExceptionHandler genericExceptionHandler
-        );
-
         void handleExceptions(
                 const std::function<void()> &mainFunction,
                 helpers::ResponseJson &response
-        );
+        ) {
+            using namespace drogon;
+            using namespace std;
+            using namespace techmino::helpers;
+            using namespace techmino::structures;
+            using namespace techmino::types;
+
+            try {
+                mainFunction();
+            } catch (const ResponseException &e) {
+                response.setStatusCode(e.statusCode());
+                response(e.toJson());
+            } catch (const orm::DrogonDbException &e) {
+                LOG_ERROR << e.base().what();
+                response.setStatusCode(k500InternalServerError);
+                response.setResultCode(ResultCode::DatabaseError);
+                response.setMessage(I18nHelper<T>::i18n("databaseError"));
+            } catch (const exception &e) {
+                LOG_ERROR << e.what();
+                response.setStatusCode(k500InternalServerError);
+                response.setResultCode(ResultCode::InternalError);
+                response.setMessage(I18nHelper<T>::i18n("internalError"));
+                response.setReason(e);
+            }
+        }
 
         virtual ~ResponseJsonHandler() = default;
-
-    private:
-        const ResponseExceptionHandler _responseExceptionHandler;
-        const DbExceptionHandler _dbExceptionHandler;
-        const GenericExceptionHandler _genericExceptionHandler;
     };
 
     template<class T>

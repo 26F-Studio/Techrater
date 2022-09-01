@@ -85,7 +85,7 @@ void PlayerManager::shutdown() {
     LOG_INFO << "PlayerManager shutdown.";
 }
 
-int64_t PlayerManager::getUserId(const string &accessToken) {
+int64_t PlayerManager::getPlayerId(const string &accessToken) {
     try {
         return _userRedis->getIdByAccessToken(accessToken);
     } catch (const redis_exception::KeyNotFound &e) {
@@ -347,18 +347,14 @@ void PlayerManager::resetPhone(
 }
 
 void PlayerManager::migrateEmail(
-        const string &accessToken,
+        const int64_t userId,
         const string &newEmail,
         const string &code
 ) {
     _checkEmailCode(newEmail, code);
 
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
-                orm::CompareOperator::EQ,
-                _userRedis->getIdByAccessToken(accessToken)
-        ));
+        auto player = _playerMapper->findByPrimaryKey(userId);
         if (player.getValueOfEmail() == newEmail) {
             return;
         }
@@ -382,29 +378,18 @@ void PlayerManager::migrateEmail(
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
     }
 }
 
 void PlayerManager::migratePhone(
-        const string &accessToken,
+        const int64_t userId,
         const string &newPhone,
         const string &code
 ) {
     _checkPhoneCode(newPhone, code);
 
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
-                orm::CompareOperator::EQ,
-                _userRedis->getIdByAccessToken(accessToken)
-        ));
+        auto player = _playerMapper->findByPrimaryKey(userId);
         if (player.getValueOfPhone() == newPhone) {
             return;
         }
@@ -428,23 +413,15 @@ void PlayerManager::migratePhone(
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
     }
 }
 
-void PlayerManager::deactivateEmail(const string &accessToken, const string &code) {
+void PlayerManager::deactivateEmail(
+        const int64_t userId,
+        const string &code
+) {
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
-                orm::CompareOperator::EQ,
-                _userRedis->getIdByAccessToken(accessToken)
-        ));
+        auto player = _playerMapper->findByPrimaryKey(userId);
         _checkEmailCode(player.getValueOfEmail(), code);
 
         _playerMapper->deleteOne(player);
@@ -455,23 +432,15 @@ void PlayerManager::deactivateEmail(const string &accessToken, const string &cod
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
     }
 }
 
-void PlayerManager::deactivatePhone(const string &accessToken, const string &code) {
+void PlayerManager::deactivatePhone(
+        const int64_t userId,
+        const string &code
+) {
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
-                orm::CompareOperator::EQ,
-                _userRedis->getIdByAccessToken(accessToken)
-        ));
+        auto player = _playerMapper->findByPrimaryKey(userId);
         _checkPhoneCode(player.getValueOfPhone(), code);
 
         _playerMapper->deleteOne(player);
@@ -482,17 +451,13 @@ void PlayerManager::deactivatePhone(const string &accessToken, const string &cod
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
     }
 }
 
-Json::Value PlayerManager::getUserInfo(const string &accessToken, int64_t userId) {
+Json::Value PlayerManager::getUserInfo(
+        const string &accessToken,
+        int64_t userId
+) {
     int64_t targetId = userId;
     NO_EXCEPTION(
             targetId = _userRedis->getIdByAccessToken(accessToken);
@@ -520,45 +485,28 @@ Json::Value PlayerManager::getUserInfo(const string &accessToken, int64_t userId
     }
 }
 
-void PlayerManager::updateUserInfo(const string &accessToken, RequestJson request) {
-    try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
-                orm::CompareOperator::EQ,
-                getUserId(accessToken)
+void PlayerManager::updateUserInfo(
+        const int64_t userId,
+        RequestJson request
+) {
+    auto player = _playerMapper->findByPrimaryKey(userId);
+    if (player.getPasswordHash() == nullptr) {
+        if (!request.check("password", JsonValue::String)) {
+            throw ResponseException(
+                    i18n("noPassword"),
+                    ResultCode::NullValue,
+                    k403Forbidden
+            );
+        }
+        player.setPasswordHash(crypto::blake2B(
+                request["password"].asString() + crypto::blake2B(to_string(player.getValueOfId()))
         ));
-        if (player.getPasswordHash() == nullptr) {
-            if (!request.check("password", JsonValue::String)) {
-                throw ResponseException(
-                        i18n("noPassword"),
-                        ResultCode::NullValue,
-                        k403Forbidden
-                );
-            }
-            player.setPasswordHash(crypto::blake2B(
-                    request["password"].asString() + crypto::blake2B(to_string(player.getValueOfId()))
-            ));
-        }
-        if (request.check("avatar", JsonValue::String)) {
-            player.setAvatarHash(crypto::blake2B(request["avatar"].asString()));
-        }
-//        request.remove("avatar_hash");
-//        request.remove("avatar_frame");
-//        request.remove("clan");
-//        request.remove("permission");
-//        request.remove("password_hash");
-//        request.remove("email");
-//        request.remove("phone");
-        player.updateByJson(request.ref());
-        _playerMapper->update(player);
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
     }
+    if (request.check("avatar", JsonValue::String)) {
+        player.setAvatarHash(crypto::blake2B(request["avatar"].asString()));
+    }
+    player.updateByJson(request.ref());
+    _playerMapper->update(player);
 }
 
 string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {

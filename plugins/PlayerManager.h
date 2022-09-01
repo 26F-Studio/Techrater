@@ -22,7 +22,7 @@ namespace techmino::plugins {
 
         void shutdown() override;
 
-        [[nodiscard]] int64_t getUserId(const std::string &accessToken);
+        [[nodiscard]] int64_t getPlayerId(const std::string &accessToken);
 
         structures::RedisToken refresh(const std::string &refreshToken);
 
@@ -67,26 +67,41 @@ namespace techmino::plugins {
         );
 
         void migrateEmail(
-                const std::string &accessToken,
+                int64_t userId,
                 const std::string &newEmail,
                 const std::string &code
         );
 
         void migratePhone(
-                const std::string &accessToken,
+                int64_t userId,
                 const std::string &newPhone,
                 const std::string &code
         );
 
-        void deactivateEmail(const std::string &accessToken, const std::string &code);
+        void deactivateEmail(
+                int64_t userId,
+                const std::string &code
+        );
 
-        void deactivatePhone(const std::string &accessToken, const std::string &code);
+        void deactivatePhone(
+                int64_t userId,
+                const std::string &code
+        );
 
-        [[nodiscard]] Json::Value getUserInfo(const std::string &accessToken, int64_t userId);
+        [[nodiscard]] Json::Value getUserInfo(
+                const std::string &accessToken,
+                int64_t userId
+        );
 
-        void updateUserInfo(const std::string &accessToken, helpers::RequestJson request);
+        void updateUserInfo(
+                int64_t userId,
+                helpers::RequestJson request
+        );
 
-        [[nodiscard]] std::string getAvatar(const std::string &accessToken, int64_t userId);
+        [[nodiscard]] std::string getAvatar(
+                const std::string &accessToken,
+                int64_t userId
+        );
 
         [[nodiscard]] bool ipLimit(const std::string &ip) const;
 

@@ -8,19 +8,15 @@
 #include <helpers/I18nHelper.h>
 
 /**
- * @brief This filter sends header "x-access-token" to User node and set attribute "id"
- * @param x-access-token: in header
- * @return id: int64_t
+ * @brief This filter limits request rate from specific ip address
  */
-
 namespace techmino::filters {
-    class IdentifyUser :
-            public drogon::HttpFilter<IdentifyUser, false>,
-            public helpers::I18nHelper<IdentifyUser> {
+    class LimitIp :
+            public drogon::HttpFilter<LimitIp>,
+            public helpers::I18nHelper<LimitIp> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
-    public:
         void doFilter(
                 const drogon::HttpRequestPtr &req,
                 drogon::FilterCallback &&failedCb,

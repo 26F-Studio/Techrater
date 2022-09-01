@@ -5,18 +5,18 @@
 #pragma once
 
 #include <drogon/HttpFilter.h>
-#include <helpers/I18nHelper.h>
+#include <structures/ExceptionHandlers.h>
 
 /**
- * @brief This filter sends header "x-access-token" to User node and set attribute "playerId"
- * @param x-access-token: in header
- * @return playerId: int64_t
+ * @brief This filter checks "Auth::verifyEmail" request body.
+ * @param email: String
+ * @return requestJson: in request attributes
  */
 
 namespace techmino::filters {
-    class CheckAccessToken :
-            public drogon::HttpFilter<CheckAccessToken, false>,
-            public helpers::I18nHelper<CheckAccessToken> {
+    class AuthVerifyEmail :
+            public drogon::HttpFilter<AuthVerifyEmail>,
+            public structures::RequestJsonHandler<AuthVerifyEmail> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 

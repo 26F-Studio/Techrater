@@ -8,15 +8,15 @@
 #include <helpers/I18nHelper.h>
 
 /**
- * @brief This filter sends header "x-access-token" to User node and set attribute "playerId"
+ * @brief This filter checks header "x-access-token" and set attribute "accessToken"
  * @param x-access-token: in header
- * @return playerId: int64_t
+ * @return accessToken: String
  */
 
 namespace techmino::filters {
-    class CheckAccessToken :
-            public drogon::HttpFilter<CheckAccessToken, false>,
-            public helpers::I18nHelper<CheckAccessToken> {
+    class GetAccessToken :
+            public drogon::HttpFilter<GetAccessToken>,
+            public helpers::I18nHelper<GetAccessToken> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
