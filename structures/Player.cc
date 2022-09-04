@@ -17,3 +17,45 @@ Player::Player(
     role(role),
     state(state),
     type(type) {}
+
+Player::Player(Player &&player) noexcept:
+        PlayerBase(player.userId),
+        _customState(std::move(player._customState)),
+        _config(std::move(player._config)) {
+    group = player.group.load();
+    role = player.role.load();
+    state = player.state.load();
+    type = player.type.load();
+}
+
+shared_ptr<Room> Player::getRoom() const {
+    return nullptr;
+}
+
+void Player::setRoom(std::shared_ptr<Room> room) {
+
+}
+
+string Player::getCustomState() const {
+    return std::string();
+}
+
+void Player::setCustomState(string &&customState) {
+
+}
+
+string Player::getConfig() const {
+    return std::string();
+}
+
+void Player::setConfig(string &&config) {
+
+}
+
+Json::Value Player::info() const {
+    return Json::Value();
+}
+
+void Player::reset() {
+
+}

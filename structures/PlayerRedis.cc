@@ -36,30 +36,14 @@ bool PlayerRedis::checkEmailCode(const string &email, const string &code) {
     return get("auth:code:email:" + email) == code;
 }
 
-bool PlayerRedis::checkPhoneCode(const string &phone, const string &code) {
-    return get("auth:code:phone:" + phone) == code;
-}
-
 void PlayerRedis::deleteEmailCode(const string &email) {
     del("auth:code:email:" + email);
-}
-
-void PlayerRedis::deletePhoneCode(const string &phone) {
-    del("auth:code:phone:" + phone);
 }
 
 void PlayerRedis::setEmailCode(const string &email, const string &code) {
     setEx(
             "auth:code:email:" + email,
             _expiration.getEmailSeconds(),
-            code
-    );
-}
-
-void PlayerRedis::setPhoneCode(const string &phone, const string &code) {
-    setEx(
-            "auth:code:phone:" + phone,
-            _expiration.getPhoneSeconds(),
             code
     );
 }

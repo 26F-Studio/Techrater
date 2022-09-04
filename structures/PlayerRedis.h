@@ -24,11 +24,7 @@ namespace techmino::structures {
                 return static_cast<int>(email.count());
             }
 
-            [[nodiscard]] int getPhoneSeconds() const {
-                return static_cast<int>(phone.count());
-            }
-
-            std::chrono::seconds refresh{}, access{}, email{}, phone{};
+            std::chrono::seconds refresh{}, access{}, email{};
         };
 
     public:
@@ -42,15 +38,9 @@ namespace techmino::structures {
 
         bool checkEmailCode(const std::string &email, const std::string &code);
 
-        bool checkPhoneCode(const std::string &phone, const std::string &code);
-
         void deleteEmailCode(const std::string &email);
 
-        void deletePhoneCode(const std::string &phone);
-
         void setEmailCode(const std::string &email, const std::string &code);
-
-        void setPhoneCode(const std::string &phone, const std::string &code);
 
         [[nodiscard]] int64_t getIdByAccessToken(const std::string &accessToken);
 

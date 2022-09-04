@@ -28,19 +28,10 @@ namespace techmino::plugins {
 
         void verifyEmail(const std::string &email);
 
-        void verifyPhone(const std::string &phone);
-
         std::string seedEmail(const std::string &email);
-
-        std::string seedPhone(const std::string &phone);
 
         [[nodiscard]] std::tuple<structures::RedisToken, bool> loginEmailCode(
                 const std::string &email,
-                const std::string &code
-        );
-
-        [[nodiscard]] std::tuple<structures::RedisToken, bool> loginPhoneCode(
-                const std::string &phone,
                 const std::string &code
         );
 
@@ -49,19 +40,8 @@ namespace techmino::plugins {
                 const std::string &password
         );
 
-        [[nodiscard]] structures::RedisToken loginPhonePassword(
-                const std::string &phone,
-                const std::string &password
-        );
-
         void resetEmail(
                 const std::string &email,
-                const std::string &code,
-                const std::string &newPassword
-        );
-
-        void resetPhone(
-                const std::string &phone,
                 const std::string &code,
                 const std::string &newPassword
         );
@@ -72,18 +52,7 @@ namespace techmino::plugins {
                 const std::string &code
         );
 
-        void migratePhone(
-                int64_t userId,
-                const std::string &newPhone,
-                const std::string &code
-        );
-
         void deactivateEmail(
-                int64_t userId,
-                const std::string &code
-        );
-
-        void deactivatePhone(
                 int64_t userId,
                 const std::string &code
         );
@@ -107,17 +76,13 @@ namespace techmino::plugins {
 
         [[nodiscard]] bool emailLimit(const std::string &email) const;
 
-        [[nodiscard]] bool phoneLimit(const std::string &phone) const;
-
     private:
-        std::chrono::seconds _ipInterval{}, _emailInterval{}, _phoneInterval{};
-        uint64_t _ipMaxCount{}, _emailMaxCount{}, _phoneMaxCount{};
+        std::chrono::seconds _ipInterval{}, _emailInterval{};
+        uint64_t _ipMaxCount{}, _emailMaxCount{};
 
-        std::unique_ptr<techmino::structures::PlayerRedis> _userRedis;
+        std::unique_ptr<techmino::structures::PlayerRedis> _playerRedis;
         std::unique_ptr<drogon::orm::Mapper<drogon_model::techrater::Player>> _playerMapper;
 
         void _checkEmailCode(const std::string &email, const std::string &code);
-
-        void _checkPhoneCode(const std::string &phone, const std::string &code);
     };
 }

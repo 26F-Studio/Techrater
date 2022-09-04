@@ -5,6 +5,7 @@
 #pragma once
 
 #include <structures/PlayerBase.h>
+#include <structures/Room.h>
 #include <shared_mutex>
 
 namespace techmino::structures {
@@ -41,12 +42,30 @@ namespace techmino::structures {
     public:
         Player(
                 int64_t userId,
-                Role role,
-                State state,
-                Type type
+                Role role = Role::Normal,
+                State state = State::Standby,
+                Type type = Type::Spectator
         );
 
+        Player(Player &&player) noexcept;
+
         ~Player() override = default;
+
+        [[nodiscard]] std::shared_ptr<Room> getRoom() const;
+
+        void setRoom(std::shared_ptr<Room> room);
+
+        [[nodiscard]] std::string getCustomState() const;
+
+        void setCustomState(std::string &&customState);
+
+        [[nodiscard]] std::string getConfig() const;
+
+        void setConfig(std::string &&config);
+
+        [[nodiscard]] Json::Value info() const;
+
+        void reset();
 
     public:
         std::atomic<uint64_t> group{0};
@@ -56,8 +75,7 @@ namespace techmino::structures {
 
     private:
         mutable std::shared_mutex _sharedMutex;
-        // TODO: Use shared_ptr<Room> instead of roomId
-        std::string _roomId, _customState, _config;
-        Json::Value _pingList;
+        std::shared_ptr<Room> _room;
+        std::string _customState, _config;
     };
 }

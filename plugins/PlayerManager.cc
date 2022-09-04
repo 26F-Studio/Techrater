@@ -26,9 +26,7 @@ void PlayerManager::initAndStart(const Json::Value &config) {
             config["tokenBucket"]["ip"]["interval"].isUInt64() &&
             config["tokenBucket"]["ip"]["maxCount"].isUInt64() &&
             config["tokenBucket"]["email"]["interval"].isUInt64() &&
-            config["tokenBucket"]["email"]["maxCount"].isUInt64() &&
-            config["tokenBucket"]["phone"]["interval"].isUInt64() &&
-            config["tokenBucket"]["phone"]["maxCount"].isUInt64()
+            config["tokenBucket"]["email"]["maxCount"].isUInt64()
     )) {
         LOG_ERROR << R"(Invalid tokenBucket config)";
         abort();
@@ -37,8 +35,6 @@ void PlayerManager::initAndStart(const Json::Value &config) {
     _ipMaxCount = config["tokenBucket"]["ip"]["maxCount"].asUInt64();
     _emailInterval = chrono::seconds(config["tokenBucket"]["email"]["interval"].asUInt64());
     _emailMaxCount = config["tokenBucket"]["email"]["maxCount"].asUInt64();
-    _phoneInterval = chrono::seconds(config["tokenBucket"]["phone"]["interval"].asUInt64());
-    _phoneMaxCount = config["tokenBucket"]["phone"]["maxCount"].asUInt64();
 
     if (!(
             config["redis"]["host"].isString() &&
@@ -47,24 +43,22 @@ void PlayerManager::initAndStart(const Json::Value &config) {
             config["redis"]["timeout"].isUInt() &&
             config["redis"]["expirations"]["refresh"].isInt() &&
             config["redis"]["expirations"]["access"].isInt() &&
-            config["redis"]["expirations"]["email"].isInt() &&
-            config["redis"]["expirations"]["phone"].isInt()
+            config["redis"]["expirations"]["email"].isInt()
     )) {
         LOG_ERROR << R"("Invalid redis config")";
         abort();
     }
 
-    _userRedis = make_unique<PlayerRedis>(std::move(PlayerRedis(
+    _playerRedis = make_unique<PlayerRedis>(std::move(PlayerRedis(
             {
                     chrono::minutes(config["redis"]["expirations"]["refresh"].asInt64()),
                     chrono::minutes(config["redis"]["expirations"]["access"].asInt64()),
-                    chrono::minutes(config["redis"]["expirations"]["email"].asInt64()),
-                    chrono::minutes(config["redis"]["expirations"]["phone"].asInt64())
+                    chrono::minutes(config["redis"]["expirations"]["email"].asInt64())
             }
     )));
 
     try {
-        _userRedis->connect(
+        _playerRedis->connect(
                 config["redis"]["host"].asString(),
                 config["redis"]["port"].asUInt(),
                 config["redis"]["db"].asInt(),
@@ -81,13 +75,13 @@ void PlayerManager::initAndStart(const Json::Value &config) {
 }
 
 void PlayerManager::shutdown() {
-    _userRedis->disconnect();
+    _playerRedis->disconnect();
     LOG_INFO << "PlayerManager shutdown.";
 }
 
 int64_t PlayerManager::getPlayerId(const string &accessToken) {
     try {
-        return _userRedis->getIdByAccessToken(accessToken);
+        return _playerRedis->getIdByAccessToken(accessToken);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
@@ -100,7 +94,7 @@ int64_t PlayerManager::getPlayerId(const string &accessToken) {
 
 RedisToken PlayerManager::refresh(const string &refreshToken) {
     try {
-        return std::move(_userRedis->refresh(refreshToken));
+        return std::move(_playerRedis->refresh(refreshToken));
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
@@ -113,7 +107,7 @@ RedisToken PlayerManager::refresh(const string &refreshToken) {
 
 void PlayerManager::verifyEmail(const string &email) {
     auto code = data::randomString(8);
-    _userRedis->setEmailCode(email, code);
+    _playerRedis->setEmailCode(email, code);
     auto mailContent = io::getFileContent("./verifyEmail.html");
     drogon::utils::replaceAll(
             mailContent,
@@ -130,16 +124,6 @@ void PlayerManager::verifyEmail(const string &email) {
     );
 }
 
-void PlayerManager::verifyPhone(const string &phone) {
-    auto code = data::randomString(8);
-    _userRedis->setPhoneCode(phone, code);
-    throw ResponseException(
-            i18n("notImplemented"),
-            ResultCode::InternalError,
-            k501NotImplemented
-    );
-}
-
 string PlayerManager::seedEmail(const string &email) {
     try {
         const auto player = _playerMapper->findOne(orm::Criteria(
@@ -152,24 +136,6 @@ string PlayerManager::seedEmail(const string &email) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
                 i18n("invalidEmail"),
-                ResultCode::NotAcceptable,
-                k403Forbidden
-        );
-    }
-}
-
-string PlayerManager::seedPhone(const string &phone) {
-    try {
-        const auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_phone,
-                orm::CompareOperator::EQ,
-                phone
-        ));
-        return crypto::blake2B(to_string(player.getValueOfId()));
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("invalidPhone"),
                 ResultCode::NotAcceptable,
                 k403Forbidden
         );
@@ -196,32 +162,7 @@ tuple<RedisToken, bool> PlayerManager::loginEmailCode(const string &email, const
     }
 
     return {
-            _userRedis->generateTokens(to_string(player.getValueOfId())),
-            player.getPasswordHash() == nullptr
-    };
-}
-
-tuple<RedisToken, bool> PlayerManager::loginPhoneCode(const string &phone, const string &code) {
-    _checkPhoneCode(phone, code);
-
-    techrater::Player player;
-    if (_playerMapper->count(orm::Criteria(
-            techrater::Player::Cols::_phone,
-            orm::CompareOperator::EQ,
-            phone
-    )) == 0) {
-        player.setPhone(phone);
-        _playerMapper->insert(player);
-    } else {
-        player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_phone,
-                orm::CompareOperator::EQ,
-                phone
-        ));
-    }
-
-    return {
-            _userRedis->generateTokens(to_string(player.getValueOfId())),
+            _playerRedis->generateTokens(to_string(player.getValueOfId())),
             player.getPasswordHash() == nullptr
     };
 }
@@ -248,40 +189,7 @@ RedisToken PlayerManager::loginEmailPassword(const string &email, const string &
             throw orm::UnexpectedRows("Incorrect password");
         }
 
-        return _userRedis->generateTokens(id);
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("invalidEmailPass"),
-                ResultCode::NotAcceptable,
-                k403Forbidden
-        );
-    }
-}
-
-RedisToken PlayerManager::loginPhonePassword(const string &phone, const string &password) {
-    try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_phone,
-                orm::CompareOperator::EQ,
-                phone
-        ));
-
-        if (player.getPasswordHash() == nullptr) {
-            throw ResponseException(
-                    i18n("noPassword"),
-                    ResultCode::NullValue,
-                    k403Forbidden
-            );
-        }
-
-        const auto id = to_string(player.getValueOfId());
-
-        if (player.getValueOfPasswordHash() != crypto::blake2B(password + crypto::blake2B(id))) {
-            throw orm::UnexpectedRows("Incorrect password");
-        }
-
-        return _userRedis->generateTokens(id);
+        return _playerRedis->generateTokens(id);
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
@@ -304,33 +212,6 @@ void PlayerManager::resetEmail(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
-        ));
-        player.setPasswordHash(crypto::blake2B(
-                newPassword + crypto::blake2B(to_string(player.getValueOfId()))
-        ));
-        _playerMapper->update(player);
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
-        throw ResponseException(
-                i18n("userNotFound"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
-    }
-}
-
-void PlayerManager::resetPhone(
-        const string &phone,
-        const string &code,
-        const string &newPassword
-) {
-    _checkPhoneCode(phone, code);
-
-    try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_phone,
-                orm::CompareOperator::EQ,
-                phone
         ));
         player.setPasswordHash(crypto::blake2B(
                 newPassword + crypto::blake2B(to_string(player.getValueOfId()))
@@ -381,40 +262,6 @@ void PlayerManager::migrateEmail(
     }
 }
 
-void PlayerManager::migratePhone(
-        const int64_t userId,
-        const string &newPhone,
-        const string &code
-) {
-    _checkPhoneCode(newPhone, code);
-
-    try {
-        auto player = _playerMapper->findByPrimaryKey(userId);
-        if (player.getValueOfPhone() == newPhone) {
-            return;
-        }
-        if (_playerMapper->count(orm::Criteria(
-                techrater::Player::Cols::_phone,
-                orm::CompareOperator::EQ,
-                newPhone
-        ))) {
-            throw ResponseException(
-                    i18n("emailExists"),
-                    ResultCode::Conflict,
-                    k409Conflict
-            );
-        }
-        player.setPhone(newPhone);
-        _playerMapper->update(player);
-    } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
-        throw ResponseException(
-                i18n("invalidAccessToken"),
-                ResultCode::NotAcceptable,
-                k401Unauthorized
-        );
-    }
-}
 
 void PlayerManager::deactivateEmail(
         const int64_t userId,
@@ -435,24 +282,6 @@ void PlayerManager::deactivateEmail(
     }
 }
 
-void PlayerManager::deactivatePhone(
-        const int64_t userId,
-        const string &code
-) {
-    try {
-        auto player = _playerMapper->findByPrimaryKey(userId);
-        _checkPhoneCode(player.getValueOfPhone(), code);
-
-        _playerMapper->deleteOne(player);
-    } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
-        throw ResponseException(
-                i18n("invalidAccessToken"),
-                ResultCode::NotAcceptable,
-                k401Unauthorized
-        );
-    }
-}
 
 Json::Value PlayerManager::getUserInfo(
         const string &accessToken,
@@ -460,7 +289,7 @@ Json::Value PlayerManager::getUserInfo(
 ) {
     int64_t targetId = userId;
     NO_EXCEPTION(
-            targetId = _userRedis->getIdByAccessToken(accessToken);
+            targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
     try {
         auto player = _playerMapper->findOne(orm::Criteria(
@@ -512,7 +341,7 @@ void PlayerManager::updateUserInfo(
 string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
     int64_t targetId = userId;
     NO_EXCEPTION(
-            targetId = _userRedis->getIdByAccessToken(accessToken);
+            targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
     try {
         auto player = _playerMapper->findOne(orm::Criteria(
@@ -532,7 +361,7 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
 }
 
 bool PlayerManager::ipLimit(const string &ip) const {
-    return _userRedis->tokenBucket(
+    return _playerRedis->tokenBucket(
             "ip:" + ip,
             _ipInterval,
             _ipMaxCount
@@ -540,55 +369,27 @@ bool PlayerManager::ipLimit(const string &ip) const {
 }
 
 bool PlayerManager::emailLimit(const string &email) const {
-    return _userRedis->tokenBucket(
+    return _playerRedis->tokenBucket(
             "email:" + email,
             _emailInterval,
             _emailMaxCount
     );
 }
 
-bool PlayerManager::phoneLimit(const string &phone) const {
-    return _userRedis->tokenBucket(
-            "phone:" + phone,
-            _phoneInterval,
-            _phoneMaxCount
-    );
-}
-
 void PlayerManager::_checkEmailCode(const string &email, const string &code) {
     try {
-        if (!_userRedis->checkEmailCode(email, code)) {
+        if (!_playerRedis->checkEmailCode(email, code)) {
             throw ResponseException(
                     i18n("invalidCode"),
                     ResultCode::NotAcceptable,
                     k403Forbidden
             );
         }
-        _userRedis->deleteEmailCode(email);
+        _playerRedis->deleteEmailCode(email);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found: " << e.what();
         throw ResponseException(
                 i18n("invalidEmail"),
-                ResultCode::NotFound,
-                k404NotFound
-        );
-    }
-}
-
-void PlayerManager::_checkPhoneCode(const string &phone, const string &code) {
-    try {
-        if (!_userRedis->checkPhoneCode(phone, code)) {
-            throw ResponseException(
-                    i18n("invalidCode"),
-                    ResultCode::NotAcceptable,
-                    k403Forbidden
-            );
-        }
-        _userRedis->deletePhoneCode(phone);
-    } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found: " << e.what();
-        throw ResponseException(
-                i18n("invalidPhone"),
                 ResultCode::NotFound,
                 k404NotFound
         );

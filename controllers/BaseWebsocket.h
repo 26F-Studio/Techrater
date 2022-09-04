@@ -11,7 +11,7 @@
 #include <structures/HandlerManagerBase.h>
 #include <structures/MessageHandlerBase.h>
 
-namespace techmino::ws::v2 {
+namespace techmino::ws::v1 {
     template<class controllerImpl, class handlerManagerImpl>
     class BaseWebsocket : public drogon::WebSocketController<controllerImpl> {
     public:
