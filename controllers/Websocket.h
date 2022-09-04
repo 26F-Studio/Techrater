@@ -9,7 +9,6 @@
 #include <helpers/I18nHelper.h>
 #include <plugins/ConnectionManager.h>
 #include <plugins/HandlerManager.h>
-#include <plugins/RoomManager.h>
 
 namespace techmino::ws::v1 {
     class Websocket :
@@ -36,6 +35,5 @@ namespace techmino::ws::v1 {
 
     private:
         plugins::ConnectionManager *_connectionManager;
-        plugins::RoomManager *_roomManager;
     };
 }
