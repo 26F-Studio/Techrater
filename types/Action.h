@@ -6,8 +6,27 @@
 
 namespace techmino::types {
     enum class Action {
+        /// Forward actions
+        ForwardData = 1000,
+
+        /// Game actions
+        GameEnd = 1100,
+        GameReady,
+        GameSpectate,
+        GameStart,
+
+        /// Player actions
+        PlayerConfig = 1200,
+        PlayerFinish,
+        PlayerGroup,
+        PlayerPing,
+        PlayerReady,
+        PlayerRole,
+        PlayerState,
+        PlayerType,
+
         /// Room actions
-        RoomCreate = 1000,
+        RoomCreate = 1300,
         RoomDataGet,
         RoomDataUpdate,
         RoomInfoGet,
@@ -18,22 +37,5 @@ namespace techmino::types {
         RoomList,
         RoomPassword,
         RoomRemove,
-
-        /// Player actions
-        PlayerConfig = 1100,
-        PlayerFinish,
-        PlayerGroup,
-        PlayerPing,
-        PlayerReady,
-        PlayerRole,
-        PlayerState,
-        PlayerType,
-
-        /// Game actions
-        GameEnd = 1200,
-        GameForwarding,
-        GameReady,
-        GameSpectate,
-        GameStart,
     };
 }

@@ -24,28 +24,6 @@ namespace techmino::plugins {
 
         void shutdown() override;
 
-        void playerConfig(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void playerFinish(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                Json::Value &&finishData
-        );
-
-        void playerGroup(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void playerReady(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void playerRole(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void playerState(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void playerType(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                structures::Player::Type type
-        );
-
         void roomCreate(
                 int action,
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
@@ -53,32 +31,6 @@ namespace techmino::plugins {
                 std::string &&password,
                 Json::Value roomInfo,
                 Json::Value roomData
-        );
-
-        void roomDataGet(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                const std::string &roomId
-        );
-
-        void roomDataUpdate(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                const std::string &roomId,
-                const Json::Value &data
-        );
-
-        void roomInfoGet(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                const std::string &roomId
-        );
-
-        void roomInfoUpdate(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                const std::string &roomId,
-                const Json::Value &data
         );
 
         void roomJoin(
@@ -99,12 +51,6 @@ namespace techmino::plugins {
                 uint64_t begin,
                 uint64_t count
         ) const;
-
-        void roomPassword(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                std::string &&password
-        );
 
         void roomRemove(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
