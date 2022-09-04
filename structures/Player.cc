@@ -2,9 +2,11 @@
 // Created by g29624 on 2022/8/30.
 //
 
+#include <magic_enum.hpp>
 #include <structures/Player.h>
 
 using namespace drogon;
+using namespace magic_enum;
 using namespace std;
 using namespace techmino::structures;
 
@@ -29,33 +31,64 @@ Player::Player(Player &&player) noexcept:
 }
 
 shared_ptr<Room> Player::getRoom() const {
-    return nullptr;
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    return _room;
 }
 
-void Player::setRoom(std::shared_ptr<Room> room) {
-
+void Player::setRoom(shared_ptr<Room> room) {
+    unique_lock<shared_mutex> lock(_sharedMutex);
+    _room = std::move(room);
 }
 
 string Player::getCustomState() const {
-    return std::string();
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    return _customState;
 }
 
 void Player::setCustomState(string &&customState) {
-
+    unique_lock<shared_mutex> lock(_sharedMutex);
+    _customState = std::move(customState);
 }
 
 string Player::getConfig() const {
-    return std::string();
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    return _config;
 }
 
 void Player::setConfig(string &&config) {
-
+    unique_lock<shared_mutex> lock(_sharedMutex);
+    _config = std::move(config);
 }
 
 Json::Value Player::info() const {
-    return Json::Value();
+    Json::Value info;
+    info["userId"] = userId;
+    info["group"] = group.load();
+    info["role"] = string(enum_name(role.load()));
+    info["type"] = string(enum_name(type.load()));
+
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    if (state == State::Playing) {
+        info["state"] = _customState;
+    } else {
+        info["state"] = string(enum_name(state.load()));
+    }
+    info["config"] = _config;
+    return info;
 }
 
 void Player::reset() {
+    _room->unsubscribe(userId);
+    group = 0;
+    role = Role::Normal;
+    state = State::Standby;
+    type = Type::Spectator;
 
+    unique_lock<shared_mutex> lock(_sharedMutex);
+    _room = nullptr;
+    _customState.clear();
+}
+
+Player::~Player() {
+    _room->unsubscribe(userId);
 }

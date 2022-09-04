@@ -40,7 +40,7 @@ namespace techmino::structures {
             Spectator,
         };
     public:
-        Player(
+        explicit Player(
                 int64_t userId,
                 Role role = Role::Normal,
                 State state = State::Standby,
@@ -49,7 +49,7 @@ namespace techmino::structures {
 
         Player(Player &&player) noexcept;
 
-        ~Player() override = default;
+        ~Player() override;
 
         [[nodiscard]] std::shared_ptr<Room> getRoom() const;
 

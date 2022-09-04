@@ -4,8 +4,6 @@
 
 #include <atomic>
 #include <magic_enum.hpp>
-#include <plugins/NodeMaintainer.h>
-#include <plugins/Authorizer.h>
 #include <structures/Player.h>
 #include <structures/Room.h>
 #include <types/Action.h>
@@ -30,8 +28,8 @@ Room::Room(
         Json::Value data
 ) : capacity(capacity),
     _passwordHash(crypto::blake2B(password)),
-    _info(move(info)),
-    _data(move(data)),
+    _info(std::move(info)),
+    _data(std::move(data)),
     _connectionManager(app().getPlugin<ConnectionManager>()) {
     _data.canSkip(true);
     _data.canOverwrite(true);
@@ -75,10 +73,10 @@ Room::Room(
 
 Room::Room(Room &&room) noexcept:
         roomId(room.roomId),
-        _passwordHash(move(room._passwordHash)),
-        _info(move(room._info.ref())),
-        _data(move(room._data.ref())),
-        _playerSet(move(room._playerSet)),
+        _passwordHash(std::move(room._passwordHash)),
+        _info(std::move(room._info.ref())),
+        _data(std::move(room._data.ref())),
+        _playerSet(std::move(room._playerSet)),
         _connectionManager(room._connectionManager) {
     state = room.state.load();
     endCondition = room.endCondition.load();
