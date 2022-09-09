@@ -4,7 +4,7 @@
 
 #include <helpers/MessageJson.h>
 #include <magic_enum.hpp>
-#include <plugins/NodeMaintainer.h>
+#include <plugins/PlayerManager.h>
 #include <plugins/RoomManager.h>
 #include <strategies/RoomDataGet.h>
 #include <types/Action.h>
@@ -22,41 +22,18 @@ using namespace techmino::types;
 
 RoomDataGet::RoomDataGet() : MessageHandlerBase(enum_integer(Action::RoomDataGet)) {}
 
-bool RoomDataGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    /// @note Return false if the player does not exist.
-    if (!player) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    /// @note Check if accessing current room.
+optional<string> RoomDataGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto player = wsConnPtr->getContext<Player>();
     if (request.check("roomId", JsonValue::String) &&
-        request["roomId"].asString() != player->getRoomId()) {
-        /// @note Return false if the player is not a global admin.
-        const auto info = app().getPlugin<NodeMaintainer>()->getUserInfo(player->userId);
-        const auto permission = enum_cast<Permission>(info["permission"].asString()).value();
-        if (permission != Permission::Admin) {
-            MessageJson message(_action);
-            message.setMessageType(MessageType::Failed);
-            message.setReason(i18n("noPermission"));
-            message.sendTo(wsConnPtr);
-            return false;
-        }
-    } else if (player->getRoomId().empty()) {
-        /// @note Return false if no room is specified.
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("roomNotFound"));
-        message.sendTo(wsConnPtr);
-        return false;
+        enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
+        return i18n("noPermission");
+    } else if (!player->getRoom()) {
+        return i18n("roomNotFound");
     }
-    return true;
+    return nullopt;
 }
 
-void RoomDataGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomDataGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
     string roomId = player->getRoomId();
     if (request.check("roomId", JsonValue::String)) {

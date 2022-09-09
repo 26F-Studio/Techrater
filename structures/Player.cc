@@ -6,6 +6,7 @@
 #include <structures/Player.h>
 
 using namespace drogon;
+using namespace drogon_model;
 using namespace magic_enum;
 using namespace std;
 using namespace techmino::structures;
@@ -16,6 +17,7 @@ Player::Player(
         State state,
         Type type
 ) : PlayerBase(userId),
+    playerInfo(orm::Mapper<techrater::Player>(app().getDbClient()).findByPrimaryKey(userId)),
     role(role),
     state(state),
     type(type) {}

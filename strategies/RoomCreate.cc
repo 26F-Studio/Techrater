@@ -20,41 +20,29 @@ using namespace techmino::types;
 
 RoomCreate::RoomCreate() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
 
-bool RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || !player->getRoom()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (wsConnPtr->getContext<Player>()->getRoom()) {
+        return i18n("notAvailable");
     }
 
     if (!request.check("capacity", JsonValue::Uint64) ||
         !request.check("info", JsonValue::Object) ||
         !request.check("data", JsonValue::Object) ||
-        request["capacity"].asUInt64() <= 0) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        request["capacity"].asUInt64() == 0) {
+        return i18n("invalidArguments");
     }
-    return true;
+
+    request.trim("password", JsonValue::String);
+    return nullopt;
 }
 
-void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     handleExceptions([&]() {
-        string password;
-        if (request.check("password", JsonValue::String)) {
-            password = std::move(request["password"].asString());
-        }
-
         app().getPlugin<RoomManager>()->roomCreate(
                 _action,
                 wsConnPtr,
                 request["capacity"].asUInt64(),
-                std::move(password),
+                request["password"].asString(),
                 request["info"],
                 request["data"]
         );

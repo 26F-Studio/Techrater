@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <helpers/I18nHelper.h>
 #include <helpers/MessageJson.h>
 #include <helpers/RequestJson.h>
 #include <magic_enum.hpp>
@@ -13,9 +14,13 @@
 
 namespace techmino::ws::v1 {
     template<class controllerImpl, class handlerManagerImpl>
-    class BaseWebsocket : public drogon::WebSocketController<controllerImpl> {
+    class BaseWebsocket :
+            public drogon::WebSocketController<controllerImpl>,
+            public helpers::I18nHelper<controllerImpl> {
     public:
         BaseWebsocket() : _handlerManager(drogon::app().getPlugin<handlerManagerImpl>()) {};
+
+        ~BaseWebsocket() override = default;
 
         void handleNewMessage(
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
@@ -26,7 +31,8 @@ namespace techmino::ws::v1 {
             using namespace techmino::helpers;
             using namespace techmino::structures;
 
-            if (!wsConnPtr->connected()) {
+            if (!connectionFilter(wsConnPtr)) {
+                wsConnPtr->shutdown(CloseCode::kViolation, I18nHelper<controllerImpl>::i18n("invalidConnection"));
                 return;
             }
 
@@ -49,10 +55,11 @@ namespace techmino::ws::v1 {
                     break;
             }
         }
-
-        ~BaseWebsocket() override = default;
-
     protected:
+        virtual bool connectionFilter(const drogon::WebSocketConnectionPtr &wsConnPtr) {
+            return wsConnPtr->connected();
+        }
+
         virtual void requestHandler(
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
                 const Json::Value &request
@@ -63,7 +70,7 @@ namespace techmino::ws::v1 {
             if (!request["action"].isInt()) {
                 MessageJson message;
                 message.setMessageType(MessageType::Failed);
-                message.setReason(reason("invalidAction"));
+                message.setReason(I18nHelper<controllerImpl>::i18n("invalidAction"));
                 message.sendTo(wsConnPtr);
             }
             RequestJson requestJson(request["data"]);
@@ -73,8 +80,6 @@ namespace techmino::ws::v1 {
                     requestJson
             );
         }
-
-        [[nodiscard]] virtual std::string reason(const std::string &param) const = 0;
 
     private:
         structures::HandlerManagerBase<handlerManagerImpl> *_handlerManager;

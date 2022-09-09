@@ -30,6 +30,6 @@ void Websocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) 
     _connectionManager->unsubscribe(wsConnPtr);
 }
 
-string Websocket::reason(const string &param) const {
-    return i18n(param);
+bool Websocket::connectionFilter(const WebSocketConnectionPtr &wsConnPtr) {
+    return wsConnPtr->connected() && wsConnPtr->getContext<Player>();
 }

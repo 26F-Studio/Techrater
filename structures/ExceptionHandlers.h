@@ -13,7 +13,7 @@
 
 namespace techmino::structures {
 
-#define NO_EXCEPTION(expressions) try{expressions}catch(...){}
+#define NO_EXCEPTION(expressions) try {expressions} catch (...) {}
 
     template<class T>
     class RequestJsonHandler : public helpers::I18nHelper<T> {
@@ -21,7 +21,7 @@ namespace techmino::structures {
         void handleExceptions(
                 const std::function<void()> &mainFunction,
                 drogon::FilterCallback &failedCb
-        ) {
+        ) const {
             using namespace drogon;
             using namespace std;
             using namespace techmino::helpers;
@@ -64,7 +64,7 @@ namespace techmino::structures {
         void handleExceptions(
                 const std::function<void()> &mainFunction,
                 helpers::ResponseJson &response
-        ) {
+        ) const {
             using namespace drogon;
             using namespace std;
             using namespace techmino::helpers;
@@ -100,7 +100,7 @@ namespace techmino::structures {
                 const std::function<void()> &mainFunction,
                 int action,
                 const drogon::WebSocketConnectionPtr &wsConnPtr
-        ) {
+        ) const {
             using namespace drogon;
             using namespace std;
             using namespace techmino::helpers;

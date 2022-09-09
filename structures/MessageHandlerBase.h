@@ -12,15 +12,15 @@ namespace techmino::structures {
     public:
         explicit MessageHandlerBase(int action) : _action(action) {}
 
-        virtual bool filter(
+        virtual std::optional<std::string> filter(
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
                 helpers::RequestJson &request
-        ) { return true; }
+        ) const { return std::nullopt; }
 
         virtual void process(
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
                 helpers::RequestJson &request
-        ) = 0;
+        ) const = 0;
 
         virtual ~MessageHandlerBase() = default;
 

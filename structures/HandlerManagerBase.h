@@ -17,10 +17,17 @@ namespace techmino::structures {
                 const drogon::WebSocketConnectionPtr &wsConnPtr,
                 helpers::RequestJson &request
         ) {
-            auto &handler = _handlerFactory.getHandler(action);
-            if (handler.filter(wsConnPtr, request)) {
-                handler.process(wsConnPtr, request);
+            using namespace helpers;
+            using namespace types;
+
+            const auto &handler = _handlerFactory.getHandler(action);
+            if (const auto reason = handler.filter(wsConnPtr, request)) {
+                MessageJson message(action);
+                message.setMessageType(MessageType::Failed);
+                message.setReason(reason.value());
+                message.sendTo(wsConnPtr);
             }
+            handler.process(wsConnPtr, request);
         }
 
         virtual ~HandlerManagerBase() = default;

@@ -11,9 +11,7 @@
 #include <plugins/HandlerManager.h>
 
 namespace techmino::ws::v1 {
-    class Websocket :
-            public BaseWebsocket<Websocket, plugins::HandlerManager>,
-            public helpers::I18nHelper<Websocket> {
+    class Websocket : public BaseWebsocket<Websocket, plugins::HandlerManager> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
@@ -31,9 +29,9 @@ namespace techmino::ws::v1 {
 
         void handleConnectionClosed(const drogon::WebSocketConnectionPtr &wsConnPtr) override;
 
-        [[nodiscard]] std::string reason(const std::string &param) const override;
-
     private:
         plugins::ConnectionManager *_connectionManager;
+
+        bool connectionFilter(const drogon::WebSocketConnectionPtr &wsConnPtr) override;
     };
 }
