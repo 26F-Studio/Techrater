@@ -4,7 +4,6 @@
 
 #include <helpers/MessageJson.h>
 #include <magic_enum.hpp>
-#include <plugins/PlayerManager.h>
 #include <plugins/RoomManager.h>
 #include <strategies/RoomDataGet.h>
 #include <types/Action.h>
@@ -24,7 +23,7 @@ RoomDataGet::RoomDataGet() : MessageHandlerBase(enum_integer(Action::RoomDataGet
 
 optional<string> RoomDataGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto player = wsConnPtr->getContext<Player>();
-    if (request.check("roomId", JsonValue::String) &&
+    if (request.check("roomId", JsonValue::String) &&   /// @note Reject if the player is not a global admin
         enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
         return i18n("noPermission");
     } else if (!player->getRoom()) {
@@ -34,16 +33,13 @@ optional<string> RoomDataGet::filter(const WebSocketConnectionPtr &wsConnPtr, Re
 }
 
 void RoomDataGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    const auto &player = wsConnPtr->getContext<Player>();
-    string roomId = player->getRoomId();
-    if (request.check("roomId", JsonValue::String)) {
-        roomId = request["roomId"].asString();
-    }
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->roomDataGet(
-                _action,
-                wsConnPtr,
-                roomId
-        );
+        RoomPtr room;
+        if (request.check("roomId", JsonValue::String)) {
+            room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
+        } else {
+            room = wsConnPtr->getContext<Player>()->getRoom();
+        }
+        MessageJson(_action).setData(room->getData()).sendTo(wsConnPtr);
     }, _action, wsConnPtr);
 }

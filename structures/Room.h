@@ -80,7 +80,7 @@ namespace techmino::structures {
 
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
-        void publish(const helpers::MessageJson &message, int64_t excludedId = -1);
+        void publish(helpers::MessageJson &message, int64_t excludedId = -1);
 
         Json::Value getData() const;
 
@@ -114,11 +114,5 @@ namespace techmino::structures {
         std::string _passwordHash;
         helpers::DataJson _info, _data;
         std::unordered_set<int64_t> _playerSet;
-
-        void _estimateForwardingNode();
-
-        void _createTransmission();
-
-        void _removeTransmission();
     };
 }

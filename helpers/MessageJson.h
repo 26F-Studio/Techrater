@@ -19,23 +19,23 @@ namespace techmino::helpers {
 
         explicit MessageJson(int action);
 
-        void setMessageType(types::MessageType type = types::MessageType::Client);
+        MessageJson &setMessageType(types::MessageType type = types::MessageType::Client);
 
-        void setAction(int action);
+        MessageJson &setAction(int action);
 
-        void setData(Json::Value data);
+        MessageJson &setData(Json::Value data);
 
-        void setData();
+        [[maybe_unused]] MessageJson &setData();
 
-        void setReason(const std::exception &e);
+        MessageJson &setReason(const std::exception &e);
 
-        [[maybe_unused]] void setReason(const drogon::orm::DrogonDbException &e);
+        [[maybe_unused]] MessageJson &setReason(const drogon::orm::DrogonDbException &e);
 
-        void setReason(const std::string &reason);
+        MessageJson &setReason(const std::string &reason);
 
-        void sendTo(const drogon::WebSocketConnectionPtr &connectionPtr) const;
+        MessageJson &sendTo(const drogon::WebSocketConnectionPtr &connectionPtr);
 
-        void closeWith(const drogon::WebSocketConnectionPtr &connectionPtr) const;
+        MessageJson &closeWith(const drogon::WebSocketConnectionPtr &connectionPtr);
     };
 }
 

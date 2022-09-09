@@ -33,18 +33,26 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
     }
 
     request.trim("password", JsonValue::String);
+
     return nullopt;
 }
 
 void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->roomCreate(
-                _action,
-                wsConnPtr,
+        auto room = make_shared<Room>  (
                 request["capacity"].asUInt64(),
-                request["password"].asString(),
+                std::move(request["password"].asString()),
                 request["info"],
                 request["data"]
         );
+        room->subscribe(player->userId);
+
+        player->setRoom(room);
+        player->role = Player::Role::Admin;
+        player->type = Player::Type::Gamer;
+        MessageJson(_action).setData(room->roomId).sendTo(wsConnPtr);
+
+        app().getPlugin<RoomManager>()->setRoom(std::move(room));
     }, _action, wsConnPtr);
 }

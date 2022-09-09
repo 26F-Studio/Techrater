@@ -20,7 +20,7 @@ using namespace techmino::types;
 
 RoomKick::RoomKick() : MessageHandlerBase(enum_integer(Action::RoomKick)) {}
 
-bool RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
     if (!player || player->getRoomId().empty() ||
         player->state != Player::State::Standby) {
@@ -61,7 +61,7 @@ bool RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &requ
     return true;
 }
 
-void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     handleExceptions([&]() {
         app().getPlugin<RoomManager>()->roomKick(
                 _action,

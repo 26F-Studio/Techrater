@@ -13,36 +13,59 @@ using namespace techmino::types;
 
 MessageJson::MessageJson() : BasicJson() { setMessageType(MessageType::Client); }
 
-MessageJson::MessageJson(Json::Value json) : BasicJson(move(json)) {}
+MessageJson::MessageJson(Json::Value json) : BasicJson(std::move(json)) {}
 
 MessageJson::MessageJson(const string &raw) : BasicJson(raw) {}
 
 MessageJson::MessageJson(int action) : MessageJson() { setAction(action); }
 
-void MessageJson::setMessageType(MessageType type) { _value["type"] = string(enum_name(type)); }
+MessageJson &MessageJson::setMessageType(MessageType type) {
+    _value["type"] = string(enum_name(type));
+    return *this;
+}
 
-void MessageJson::setAction(int action) { _value["action"] = action; }
+MessageJson &MessageJson::setAction(int action) {
+    _value["action"] = action;
+    return *this;
+}
 
-void MessageJson::setData(Json::Value data) { _value["data"] = move(data); }
+MessageJson &MessageJson::setData(Json::Value data) {
+    _value["data"] = std::move(data);
+    return *this;
+}
 
-void MessageJson::setData() { _value.removeMember("data"); }
+MessageJson &MessageJson::setData() {
+    _value.removeMember("data");
+    return *this;
+}
 
-void MessageJson::setReason(const exception &e) { setReason(e.what()); }
+MessageJson &MessageJson::setReason(const exception &e) {
+    setReason(e.what());
+    return *this;
+}
 
-[[maybe_unused]] void MessageJson::setReason(const drogon::orm::DrogonDbException &e) { setReason(e.base().what()); }
+MessageJson &MessageJson::setReason(const drogon::orm::DrogonDbException &e) {
+    setReason(e.base().what());
+    return *this;
+}
 
-void MessageJson::setReason(const string &reason) { _value["reason"] = reason; }
+MessageJson &MessageJson::setReason(const string &reason) {
+    _value["reason"] = reason;
+    return *this;
+}
 
-void MessageJson::sendTo(const WebSocketConnectionPtr &connectionPtr) const {
+MessageJson &MessageJson::sendTo(const WebSocketConnectionPtr &connectionPtr) {
     if (connectionPtr->connected()) {
         connectionPtr->send(stringify());
     }
+    return *this;
 }
 
-void MessageJson::closeWith(const WebSocketConnectionPtr &connectionPtr) const {
+MessageJson &MessageJson::closeWith(const WebSocketConnectionPtr &connectionPtr) {
     if (connectionPtr->connected()) {
         connectionPtr->shutdown(CloseCode::kViolation, stringify());
     }
+    return *this;
 }
 
 

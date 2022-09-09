@@ -20,38 +20,51 @@ using namespace techmino::types;
 
 RoomJoin::RoomJoin() : MessageHandlerBase(enum_integer(Action::RoomJoin)) {}
 
-bool RoomJoin::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || !player->getRoomId().empty()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+optional<string> RoomJoin::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (wsConnPtr->getContext<Player>()->getRoom()) {
+        return i18n("notAvailable");
     }
 
     if (!request.check("roomId", JsonValue::String)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    return true;
+
+    request.trim("password", JsonValue::String);
+
+    return nullopt;
 }
 
-void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        string password;
-        if (request.check("password", JsonValue::String)) {
-            password = move(request["password"].asString());
-        }
+        auto room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
+        if (room->checkPassword(request["password"].asString())) {
+            bool spectate = false;
+            if (room->state == Room::State::Playing) {
+                spectate = true;
+            } else if (!room->full() && room->tryCancelStart()) {
+                player->type = Player::Type::Gamer;
+            }
+            player->setRoom(room);
+            MessageJson(_action)
+                                .setMessageType(MessageType::Server)
+                                .setData(room->parse(true))
+                                .sendTo(wsConnPtr);
 
-        app().getPlugin<RoomManager>()->roomJoin(
-                _action,
-                wsConnPtr,
-                move(request["roomId"].asString()),
-                move(password)
-        );
+            room->subscribe(player->userId);
+            room->publish(
+                    MessageJson(_action).setData(player->info()),
+                    player->userId
+            );
+
+            // TODO: Implement spectate logics
+            if (spectate) {
+                MessageJson spectateMessage(enum_integer(Action::GameSpectate));
+                spectateMessage.setData(room->forwardingNode.load().toIpPort());
+                spectateMessage.sendTo(wsConnPtr);
+            }
+        } else {
+            throw MessageException("wrongPassword");
+        }
     }, _action, wsConnPtr);
 }

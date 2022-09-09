@@ -20,38 +20,22 @@ using namespace techmino::types;
 
 RoomInfoGet::RoomInfoGet() : MessageHandlerBase(enum_integer(Action::RoomInfoGet)) {}
 
-bool RoomInfoGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    /// @note Return false if the player does not exist.
-    if (!player) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+optional<string> RoomInfoGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    /// @note Reject if no room is specified and the player is not in the room
+    if (!request.check("roomId", JsonValue::String) && !wsConnPtr->getContext<Player>()->getRoom()) {
+        return i18n("roomNotFound");
     }
-    if (!request.check("roomId", JsonValue::String) && player->getRoomId().empty()) {
-        /// @note Return false if no room is specified.
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("roomNotFound"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    return true;
+    return nullopt;
 }
 
-void RoomInfoGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    string roomId = player->getRoomId();
-    if (request.check("roomId", JsonValue::String)) {
-        roomId = request["roomId"].asString();
-    }
+void RoomInfoGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->roomInfoGet(
-                _action,
-                wsConnPtr,
-                roomId
-        );
+        RoomPtr room;
+        if (request.check("roomId", JsonValue::String)) {
+            room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
+        } else {
+            room = wsConnPtr->getContext<Player>()->getRoom();
+        }
+        MessageJson(_action).setData(room->getInfo()).sendTo(wsConnPtr);
     }, _action, wsConnPtr);
 }

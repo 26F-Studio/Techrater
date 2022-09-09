@@ -10,6 +10,10 @@
 #include <structures/Player.h>
 #include <types/Action.h>
 
+namespace {
+    using RoomPtr = std::shared_ptr<techmino::structures::Room>;
+}
+
 namespace techmino::plugins {
     class RoomManager :
             public drogon::Plugin<RoomManager>,
@@ -23,22 +27,6 @@ namespace techmino::plugins {
         void initAndStart(const Json::Value &config) override;
 
         void shutdown() override;
-
-        void roomCreate(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                uint32_t capacity,
-                std::string &&password,
-                Json::Value roomInfo,
-                Json::Value roomData
-        );
-
-        void roomJoin(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                std::string &&roomId,
-                std::string &&password
-        );
 
         void roomKick(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
 
@@ -54,9 +42,15 @@ namespace techmino::plugins {
 
         void roomRemove(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
+        RoomPtr getRoom(const std::string &roomId) const;
+
+        bool removeRoom(const std::string &roomId);
+
+        bool setRoom(const RoomPtr &room);
+
     private:
         mutable std::shared_mutex _sharedMutex;
-        std::unordered_map<std::string, structures::Room> _roomMap;
+        std::unordered_map<std::string, RoomPtr> _roomMap;
     };
 }
 

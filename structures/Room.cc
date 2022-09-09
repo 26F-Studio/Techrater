@@ -197,7 +197,7 @@ Json::Value Room::parse(bool details) const {
     return result;
 }
 
-void Room::publish(const MessageJson &message, int64_t excludedId) {
+void Room::publish(MessageJson &message, int64_t excludedId) {
     shared_lock<shared_mutex> lock(_sharedMutex);
     for (const auto userId: _playerSet) {
         if (excludedId != userId) {
@@ -279,8 +279,6 @@ void Room::tryEnd(bool force) {
     message.setMessageType(MessageType::Server);
     message.setAction(enum_integer(Action::GameEnd));
     publish(message);
-
-    _removeTransmission();
 }
 
 void Room::tryStart() {
@@ -297,8 +295,6 @@ void Room::tryStart() {
 
     startTimerId = app().getLoop()->runAfter(3, [this]() {
         state = State::Playing;
-        _estimateForwardingNode();
-        _createTransmission();
 
         Json::Value data;
         data["transferNode"] = forwardingNode.load().toIpPort();
@@ -321,65 +317,5 @@ Room::~Room() {
         MessageJson successMessage(enum_integer(Action::RoomRemove));
         successMessage.setMessageType(MessageType::Server);
         successMessage.sendTo(wsConnPtr);
-    }
-}
-
-void Room::_estimateForwardingNode() {
-    vector<Json::Value> pingLists;
-    {
-        shared_lock<shared_mutex> lock(_sharedMutex);
-        for (const auto userId: _playerSet) {
-            const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
-            // TODO: Kick high delay spectators, replace high delay players with robots
-            if (player->type == Player::Type::Gamer) {
-                const auto &wsConnPtr = _connectionManager->getConnPtr(userId);
-                pingLists.emplace_back(wsConnPtr->getContext<Player>()->getPingList());
-            }
-        }
-    }
-
-    // TODO: Implement estimating algorithm
-    const auto &address = pingLists[0][0]["address"].asString();
-    auto parts = drogon::utils::splitString(address, ":");
-    if (parts.size() != 2) {
-        throw NetworkException(
-                "Invalid address: " + address,
-                ReqResult::BadResponse
-        );
-    }
-    forwardingNode = InetAddress(parts[0], stoi(parts[1]));
-}
-
-void Room::_createTransmission() {
-    Json::Value body;
-    body["roomId"] = roomId;
-    {
-        shared_lock<shared_mutex> lock(_sharedMutex);
-        for (const auto userId: _playerSet) {
-            body["players"].append(userId);
-        }
-    }
-    auto client = HttpClient::newHttpClient("http://" + forwardingNode.load().toIpPort());
-    auto req = HttpRequest::newHttpJsonRequest(body);
-    req->setMethod(Post);
-    req->setPath("/tech/api/v2/Manage/create");
-    auto [result, responsePtr] = client->sendRequest(req, 3);
-
-    if (result != ReqResult::Ok || responsePtr->getStatusCode() != k200OK) {
-        throw NetworkException("Connect node is down", result);
-    }
-}
-
-void Room::_removeTransmission() {
-    Json::Value body;
-    body["roomId"] = roomId;
-    auto client = HttpClient::newHttpClient("http://" + forwardingNode.load().toIpPort());
-    auto req = HttpRequest::newHttpJsonRequest(body);
-    req->setMethod(Post);
-    req->setPath("/tech/api/v2/Manage/remove");
-    auto [result, responsePtr] = client->sendRequest(req, 3);
-
-    if (result != ReqResult::Ok || responsePtr->getStatusCode() != k200OK) {
-        throw NetworkException("Connect node is down", result);
     }
 }
