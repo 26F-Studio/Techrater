@@ -22,16 +22,16 @@ void ConnectionManager::shutdown() { LOG_INFO << "ConnectionManager shutdown."; 
 void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     const auto &player = wsConnPtr->getContext<PlayerBase>();
     if (wsConnPtr->connected() && player) {
-        const auto userId = player->userId;
+        const auto playerId = player->playerId;
         unique_lock<shared_mutex> lock(_sharedMutex);
-        if (_connectionMap.contains(userId) &&
-            _connectionMap[userId]->connected()) {
+        if (_connectionMap.contains(playerId) &&
+            _connectionMap[playerId]->connected()) {
             MessageJson message;
             message.setMessageType(MessageType::Error);
             message.setReason(i18n("connectionReplaced"));
-            message.closeWith(_connectionMap[userId]);
+            message.closeWith(_connectionMap[playerId]);
         }
-        _connectionMap[userId] = wsConnPtr;
+        _connectionMap[playerId] = wsConnPtr;
     }
 }
 
@@ -40,14 +40,14 @@ void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr) {
     if (wsConnPtr->connected() && player) {
         try {
             unique_lock<shared_mutex> lock(_sharedMutex);
-            if (_connectionMap.at(player->userId) == wsConnPtr) {
-                _connectionMap.erase(player->userId);
+            if (_connectionMap.at(player->playerId) == wsConnPtr) {
+                _connectionMap.erase(player->playerId);
             } else {
                 LOG_DEBUG << "Unsubscribe failed, not same connection: \n"
                           << "\tOriginal: (local: "
-                          << _connectionMap.at(player->userId)->localAddr().toIpPort()
+                          << _connectionMap.at(player->playerId)->localAddr().toIpPort()
                           << ", remote: "
-                          << _connectionMap.at(player->userId)->peerAddr().toIpPort()
+                          << _connectionMap.at(player->playerId)->peerAddr().toIpPort()
                           << ")\n"
                           << "\tCurrent: (local: "
                           << wsConnPtr->localAddr().toIpPort()

@@ -51,10 +51,10 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                                 .setData(room->parse(true))
                                 .sendTo(wsConnPtr);
 
-            room->subscribe(player->userId);
+            room->subscribe(player->playerId);
             room->publish(
                     MessageJson(_action).setData(player->info()),
-                    player->userId
+                    player->playerId
             );
 
             // TODO: Implement spectate logics

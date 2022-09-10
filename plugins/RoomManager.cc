@@ -32,7 +32,7 @@ void RoomManager::playerConfig(int action, const WebSocketConnectionPtr &wsConnP
     const auto &player = wsConnPtr->getContext<Player>();
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["config"] = player->getConfig();
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -52,7 +52,7 @@ void RoomManager::playerFinish(
     const auto &player = wsConnPtr->getContext<Player>();
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["finishData"] = move(finishData);
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -70,7 +70,7 @@ void RoomManager::playerGroup(int action, const WebSocketConnectionPtr &wsConnPt
     const auto &player = wsConnPtr->getContext<Player>();
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["group"] = player->group.load();
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -87,7 +87,7 @@ void RoomManager::playerReady(int action, const WebSocketConnectionPtr &wsConnPt
     auto ready = player->state == Player::State::Ready;
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["ready"] = ready;
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -109,7 +109,7 @@ void RoomManager::playerRole(int action, const WebSocketConnectionPtr &wsConnPtr
     const auto &player = wsConnPtr->getContext<Player>();
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["role"] = string(enum_name(player->role.load()));
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -125,7 +125,7 @@ void RoomManager::playerState(int action, const WebSocketConnectionPtr &wsConnPt
     const auto &player = wsConnPtr->getContext<Player>();
 
     Json::Value data;
-    data["userId"] = player->userId;
+    data["playerId"] = player->playerId;
     data["customState"] = player->getCustomState();
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
@@ -155,7 +155,7 @@ void RoomManager::playerType(
             player->type = type;
 
             Json::Value data;
-            data["userId"] = player->userId;
+            data["playerId"] = player->playerId;
             data["type"] = string(enum_name(player->type.load()));
             MessageJson publishMessage(action);
             publishMessage.setData(move(data));
@@ -173,10 +173,10 @@ void RoomManager::roomKick(int action, const WebSocketConnectionPtr &wsConnPtr) 
 void RoomManager::roomLeave(int action, const WebSocketConnectionPtr &wsConnPtr) {
     const auto &player = wsConnPtr->getContext<Player>();
     const auto &roomId = player->getRoomId();
-    const auto &userId = player->userId;
+    const auto &userId = player->playerId;
 
     Json::Value data;
-    data["userId"] = userId;
+    data["playerId"] = userId;
     MessageJson publishMessage(action);
     publishMessage.setData(move(data));
     bool empty;

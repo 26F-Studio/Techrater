@@ -60,7 +60,7 @@ bool PlayerRole::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &re
             request["targetUserId"].asInt64()
     )->getContext<Player>();
     if (!targetPlayer ||
-        player->userId == targetPlayer->userId ||
+        player->playerId == targetPlayer->playerId ||
         player->getRoomId() != targetPlayer->getRoomId()) {
         MessageJson message(_action);
         message.setMessageType(MessageType::Failed);

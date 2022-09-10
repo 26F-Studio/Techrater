@@ -8,4 +8,4 @@ using namespace drogon;
 using namespace std;
 using namespace techmino::structures;
 
-PlayerBase::PlayerBase(int64_t userId) : userId(userId) {}
+PlayerBase::PlayerBase(int64_t playerId) : playerId(playerId) {}

@@ -23,7 +23,7 @@ Player::Player(
     type(type) {}
 
 Player::Player(Player &&player) noexcept:
-        PlayerBase(player.userId),
+        PlayerBase(player.playerId),
         _customState(std::move(player._customState)),
         _config(std::move(player._config)) {
     group = player.group.load();
@@ -64,7 +64,7 @@ void Player::setConfig(string &&config) {
 
 Json::Value Player::info() const {
     Json::Value info;
-    info["userId"] = userId;
+    info["playerId"] = playerId;
     info["group"] = group.load();
     info["role"] = string(enum_name(role.load()));
     info["type"] = string(enum_name(type.load()));
@@ -80,7 +80,7 @@ Json::Value Player::info() const {
 }
 
 void Player::reset() {
-    _room->unsubscribe(userId);
+    _room->unsubscribe(playerId);
     group = 0;
     role = Role::Normal;
     state = State::Standby;
@@ -92,5 +92,5 @@ void Player::reset() {
 }
 
 Player::~Player() {
-    _room->unsubscribe(userId);
+    _room->unsubscribe(playerId);
 }

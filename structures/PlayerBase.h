@@ -9,10 +9,10 @@
 namespace techmino::structures {
     class PlayerBase {
     public:
-        explicit PlayerBase(int64_t userId);
+        explicit PlayerBase(int64_t playerId);
 
         virtual ~PlayerBase() = default;
 
-        const int64_t userId;
+        const int64_t playerId;
     };
 }

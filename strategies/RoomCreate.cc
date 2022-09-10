@@ -46,7 +46,7 @@ void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
                 request["info"],
                 request["data"]
         );
-        room->subscribe(player->userId);
+        room->subscribe(player->playerId);
 
         player->setRoom(room);
         player->role = Player::Role::Admin;
