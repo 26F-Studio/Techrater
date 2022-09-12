@@ -7,7 +7,6 @@
 #include <plugins/RoomManager.h>
 #include <strategies/RoomKick.h>
 #include <types/Action.h>
-#include <types/JsonValue.h>
 #include <types/Permission.h>
 
 using namespace drogon;
@@ -51,19 +50,34 @@ optional<string> RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, Reque
 }
 
 void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &roomManager = app().getPlugin<RoomManager>();
+    const auto &player = wsConnPtr->getContext<Player>();
+    const auto &targetConnPtr = app().getPlugin<ConnectionManager>()->getConnPtr(request["playerId"].asInt64());
+    const auto &target = targetConnPtr->getContext<Player>();
+
     handleExceptions([&]() {
         RoomPtr room;
         if (request.check("roomId", JsonValue::String)) {
-            room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
+            room = roomManager->getRoom(request["roomId"].asString());
         } else {
             room = wsConnPtr->getContext<Player>()->getRoom();
         }
 
-        room;
+        Json::Value data;
+        data["executorId"] = player->playerId;
+        data["targetId"] = target->playerId;
+        auto message = MessageJson(_action).setData(std::move(data));
 
-        app().getPlugin<RoomManager>()->roomKick(
-                _action,
-                app().getPlugin<ConnectionManager>()->getConnPtr(request.ref().asInt64())
-        );
+        room->unsubscribe(target->playerId);
+        room->publish(message, target->playerId);
+
+        target->reset();
+        message.setMessageType(MessageType::Server).sendTo(targetConnPtr);
+
+        if (room->empty()) {
+            roomManager->removeRoom(room->roomId);
+        } else {
+            room->tryEnd();
+        }
     }, _action, wsConnPtr);
 }

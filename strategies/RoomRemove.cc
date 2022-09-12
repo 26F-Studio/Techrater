@@ -7,6 +7,7 @@
 #include <plugins/RoomManager.h>
 #include <strategies/RoomRemove.h>
 #include <types/Action.h>
+#include <types/Permission.h>
 
 using namespace drogon;
 using namespace magic_enum;
@@ -19,27 +20,40 @@ using namespace techmino::types;
 
 RoomRemove::RoomRemove() : MessageHandlerBase(enum_integer(Action::RoomRemove)) {}
 
-bool RoomRemove::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> RoomRemove::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+
+    /// @note Check if accessing current room.
+    if (request.check("roomId", JsonValue::String)) {
+        /// @note Reject if the player is not a global admin.
+        if (enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
+            return i18n("noPermission");
+        }
+    } else if (player->getRoom()) {
+        /// @note Reject if the player is not a room admin.
+        if (player->role < Player::Role::Admin) {
+            return i18n("noPermission");
+        }
+    } else {
+        /// @note Reject if no room is specified.
+        return i18n("roomNotFound");
     }
-    if (player->role < Player::Role::Admin) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("noPermission"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    return true;
+    return nullopt;
 }
 
-void RoomRemove::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomRemove::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &roomManager = app().getPlugin<RoomManager>();
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->roomRemove(wsConnPtr);
+        RoomPtr room;
+        if (request.check("roomId", JsonValue::String)) {
+            room = roomManager->getRoom(request["roomId"].asString());
+        } else {
+            room = player->getRoom();
+        }
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        room->publish(MessageJson(_action).setData(std::move(data)));
+        roomManager->removeRoom(room->roomId);
     }, _action, wsConnPtr);
 }

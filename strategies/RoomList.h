@@ -17,8 +17,9 @@ namespace techmino::strategies {
     public:
         RoomList();
 
-        bool filter(const drogon::WebSocketConnectionPtr &wsConnPtr, helpers::RequestJson &request) override;
-
-        void process(const drogon::WebSocketConnectionPtr &wsConnPtr, helpers::RequestJson &request) override;
+        void process(
+                const drogon::WebSocketConnectionPtr &wsConnPtr,
+                helpers::RequestJson &request
+        ) const override;
     };
 }

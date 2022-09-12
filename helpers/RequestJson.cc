@@ -80,9 +80,9 @@ bool RequestJson::_check(
             return json.isArray();
         case JsonValue::Bool:
             return json.isBool();
-        case JsonValue::Uint:
+        case JsonValue::UInt:
             return json.isUInt();
-        case JsonValue::Uint64:
+        case JsonValue::UInt64:
             return json.isUInt64();
         case JsonValue::Int:
             return json.isInt();

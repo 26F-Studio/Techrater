@@ -25,7 +25,7 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
         return i18n("notAvailable");
     }
 
-    if (!request.check("capacity", JsonValue::Uint64) ||
+    if (!request.check("capacity", JsonValue::UInt64) ||
         !request.check("info", JsonValue::Object) ||
         !request.check("data", JsonValue::Object) ||
         request["capacity"].asUInt64() == 0) {

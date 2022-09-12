@@ -28,19 +28,7 @@ namespace techmino::plugins {
 
         void shutdown() override;
 
-        void roomKick(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void roomLeave(int action, const drogon::WebSocketConnectionPtr &wsConnPtr);
-
-        void roomList(
-                int action,
-                const drogon::WebSocketConnectionPtr &wsConnPtr,
-                std::string &&search,
-                uint64_t begin,
-                uint64_t count
-        ) const;
-
-        void roomRemove(const drogon::WebSocketConnectionPtr &wsConnPtr);
+        Json::Value listRoom(uint64_t pageIndex, uint64_t pageSize) const;
 
         RoomPtr getRoom(const std::string &roomId) const;
 

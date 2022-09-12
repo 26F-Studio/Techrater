@@ -20,20 +20,38 @@ using namespace techmino::types;
 
 RoomLeave::RoomLeave() : MessageHandlerBase(enum_integer(Action::RoomLeave)) {}
 
-bool RoomLeave::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+optional<string> RoomLeave::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (!wsConnPtr->getContext<Player>()->getRoom()) {
+        return i18n("notAvailable");
     }
-    return true;
+    return nullopt;
 }
 
-void RoomLeave::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomLeave::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &roomManager = app().getPlugin<RoomManager>();
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->roomLeave(_action, wsConnPtr);
+        RoomPtr room;
+        if (request.check("roomId", JsonValue::String)) {
+            room = roomManager->getRoom(request["roomId"].asString());
+        } else {
+            room = wsConnPtr->getContext<Player>()->getRoom();
+        }
+
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        auto message = MessageJson(_action).setData(std::move(data));
+
+        room->unsubscribe(player->playerId);
+        room->publish(message, player->playerId);
+
+        player->reset();
+        message.setMessageType(MessageType::Server).sendTo(wsConnPtr);
+
+        if (room->empty()) {
+            roomManager->removeRoom(room->roomId);
+        } else {
+            room->tryEnd();
+        }
     }, _action, wsConnPtr);
 }

@@ -33,7 +33,7 @@ bool PlayerGroup::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         return false;
     }
 
-    if (!request.check(JsonValue::Uint64)) {
+    if (!request.check(JsonValue::UInt64)) {
         MessageJson message(_action);
         message.setMessageType(MessageType::Failed);
         message.setReason(i18n("invalidArguments"));

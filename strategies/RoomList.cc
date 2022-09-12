@@ -20,43 +20,22 @@ using namespace techmino::types;
 
 RoomList::RoomList() : MessageHandlerBase(enum_integer(Action::RoomList)) {}
 
-bool RoomList::filter(
-        const WebSocketConnectionPtr &wsConnPtr,
-        RequestJson &request
-) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    if (!player) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    return true;
-}
-
-void RoomList::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void RoomList::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    // TODO: Implement search logics
     handleExceptions([&]() {
-        string search;
-        uint64_t begin = 0, count = 10;
-        if (request.check("search", JsonValue::String)) {
-            search = move(request["search"].asString());
+        uint64_t pageIndex = 0, pageSize = 10;
+
+        if (request.check("pageIndex", JsonValue::UInt64)) {
+            pageIndex = request["pageIndex"].asUInt64();
         }
 
-        if (request.check("begin", JsonValue::Uint64)) {
-            begin = request["begin"].asUInt64();
+        if (request.check("pageSize", JsonValue::UInt64)) {
+            pageSize = request["pageSize"].asUInt64();
         }
 
-        if (request.check("count", JsonValue::Uint64)) {
-            count = request["count"].asUInt64();
-        }
+        MessageJson(_action).setData(
+                app().getPlugin<RoomManager>()->listRoom(pageIndex, pageSize)
+        ).sendTo(wsConnPtr);
 
-        app().getPlugin<RoomManager>()->roomList(
-                _action,
-                wsConnPtr,
-                move(search),
-                begin,
-                count
-        );
     }, _action, wsConnPtr);
 }

@@ -166,75 +166,27 @@ void RoomManager::playerType(
     }
 }
 
-void RoomManager::roomKick(int action, const WebSocketConnectionPtr &wsConnPtr) {
-    roomLeave(action, wsConnPtr);
-}
-
-void RoomManager::roomLeave(int action, const WebSocketConnectionPtr &wsConnPtr) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    const auto &roomId = player->getRoomId();
-    const auto &userId = player->playerId;
-
-    Json::Value data;
-    data["playerId"] = userId;
-    MessageJson publishMessage(action);
-    publishMessage.setData(move(data));
-    bool empty;
-    try {
-        shared_lock<shared_mutex> lock(_sharedMutex);
-        auto &room = _roomMap.at(roomId);
-        room.unsubscribe(userId);
-        room.publish(publishMessage, userId);
-        player->reset();
-
-        empty = room.empty();
-        if (!empty) {
-            room.tryEnd();
-        }
-    } catch (const out_of_range &) {
-        throw MessageException("roomNotFound");
-    }
-
-    MessageJson successMessage(action);
-    successMessage.setMessageType(MessageType::Server);
-    successMessage.sendTo(wsConnPtr);
-
-    if (empty) {
-        unique_lock<std::shared_mutex> lock(_sharedMutex);
-        _roomMap.erase(roomId);
-    }
-}
-
-void RoomManager::roomList(
-        int action,
-        const WebSocketConnectionPtr &wsConnPtr,
-        string &&search,
-        uint64_t begin,
-        uint64_t count
-) const {
+Json::Value RoomManager::listRoom(uint64_t pageIndex, uint64_t pageSize) const {
     Json::Value data(Json::arrayValue);
     {
         shared_lock<shared_mutex> lock(_sharedMutex);
-        if (begin < _roomMap.size()) {
-            uint64_t counter{};
-            for (const auto &[roomId, room]: _roomMap) {
-                if (counter < begin) {
-                    ++counter;
-                    continue;
-                }
-                if (counter >= begin + count) {
-                    break;
-                }
-                if (search.empty() || roomId.find(search) != string::npos) {
-                    data.append(room.parse());
-                }
-                ++counter;
+        auto iterator = _roomMap.begin();
+        for (uint64_t i = 0; i < pageIndex * pageSize; ++i) {
+            if (iterator == _roomMap.end()) {
+                break;
             }
+            ++iterator;
+        }
+
+        for (uint64_t i = 0; i < pageSize; ++i) {
+            if (iterator == _roomMap.end()) {
+                break;
+            }
+            data.append(iterator->second->parse());
+            ++iterator;
         }
     }
-    MessageJson successMessage(action);
-    successMessage.setData(move(data));
-    successMessage.sendTo(wsConnPtr);
+    return data;
 }
 
 void RoomManager::roomPassword(
@@ -254,14 +206,6 @@ void RoomManager::roomPassword(
     MessageJson successMessage(action);
     successMessage.setMessageType(MessageType::Server);
     successMessage.sendTo(wsConnPtr);
-}
-
-void RoomManager::roomRemove(const WebSocketConnectionPtr &wsConnPtr) {
-    const auto &player = wsConnPtr->getContext<Player>();
-    {
-        unique_lock<std::shared_mutex> lock(_sharedMutex);
-        _roomMap.erase(player->getRoomId());
-    }
 }
 
 RoomPtr RoomManager::getRoom(const std::string &roomId) const {
