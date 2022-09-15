@@ -21,31 +21,30 @@ using namespace techmino::types;
 
 PlayerFinish::PlayerFinish() : MessageHandlerBase(enum_integer(Action::PlayerFinish)) {}
 
-bool PlayerFinish::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerFinish::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty() ||
-        player->type == Player::Type::Spectator ||
+    if (!player->getRoom() ||
+        player->type != Player::Type::Gamer ||
         player->state != Player::State::Playing) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("notAvailable");
     }
 
     if (!request.check(JsonValue::Object)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    return true;
+    return nullopt;
 }
 
-void PlayerFinish::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerFinish::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        wsConnPtr->getContext<Player>()->state = Player::State::Finished;
-        app().getPlugin<RoomManager>()->playerFinish(_action, wsConnPtr, move(request.ref()));
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["data"] = std::move(request.ref());
+
+        player->state = Player::State::Finished;
+        auto room = player->getRoom();
+        room->publish(MessageJson(_action).setData(std::move(data)));
+        room->endGame();
     }, _action, wsConnPtr);
 }

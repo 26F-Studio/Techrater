@@ -42,17 +42,12 @@ void Player::setRoom(shared_ptr<Room> room) {
     _room = std::move(room);
 }
 
-string Player::getCustomState() const {
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    return _customState;
-}
-
 void Player::setCustomState(string &&customState) {
     unique_lock<shared_mutex> lock(_sharedMutex);
     _customState = std::move(customState);
 }
 
-string Player::getConfig() const {
+[[maybe_unused]] string Player::getConfig() const {
     shared_lock<shared_mutex> lock(_sharedMutex);
     return _config;
 }
@@ -70,7 +65,7 @@ Json::Value Player::info() const {
     info["type"] = string(enum_name(type.load()));
 
     shared_lock<shared_mutex> lock(_sharedMutex);
-    if (state == State::Playing) {
+    if (state == State::Playing && !_customState.empty()) {
         info["state"] = _customState;
     } else {
         info["state"] = string(enum_name(state.load()));
@@ -80,7 +75,6 @@ Json::Value Player::info() const {
 }
 
 void Player::reset() {
-    _room->unsubscribe(playerId);
     group = 0;
     role = Role::Normal;
     state = State::Standby;
@@ -92,5 +86,8 @@ void Player::reset() {
 }
 
 Player::~Player() {
-    _room->unsubscribe(playerId);
+    // TODO: Check if this would cause problems
+    if (_room) {
+        _room->unsubscribe(playerId);
+    }
 }

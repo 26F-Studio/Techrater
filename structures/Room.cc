@@ -2,7 +2,6 @@
 // Created by particleg on 2021/10/8.
 //
 
-#include <atomic>
 #include <magic_enum.hpp>
 #include <structures/Player.h>
 #include <structures/Room.h>
@@ -33,42 +32,6 @@ Room::Room(
     _connectionManager(app().getPlugin<ConnectionManager>()) {
     _data.canSkip(true);
     _data.canOverwrite(true);
-    if (_data["endCondition"].isString()) {
-        auto tempEndCondition = enum_cast<EndCondition>(_data["endCondition"].asString());
-        if (tempEndCondition.has_value()) {
-            endCondition = EndCondition{tempEndCondition.value()};
-        }
-    }
-
-    switch (endCondition) {
-        case EndCondition::GroupLeft:
-            if (_data["leftLimit"].isUInt64()) {
-                leftLimit = _data["leftLimit"].asUInt64() < capacity
-                            ? _data["leftLimit"].asUInt64()
-                            : capacity;
-            }
-            break;
-        case EndCondition::Custom:
-            LOG_ERROR << "Not implemented yet";
-            [[fallthrough]];
-        case EndCondition::PlayerLeft:
-            if (_data["leftLimit"].isUInt64()) {
-                leftLimit = _data["leftLimit"].asUInt64() < capacity
-                            ? _data["leftLimit"].asUInt64()
-                            : capacity;
-            }
-            break;
-        case EndCondition::TimesUp: {
-            uint64_t timeLimit = _data["timeLimit"].isUInt64()
-                                 ? _data["timeLimit"].asUInt64()
-                                 : 120;
-            endTimerId = app().getLoop()->runAfter(
-                    static_cast<double>(timeLimit),
-                    [this]() { tryEnd(true); }
-            );
-            break;
-        }
-    }
 }
 
 Room::Room(Room &&room) noexcept:
@@ -79,65 +42,49 @@ Room::Room(Room &&room) noexcept:
         _playerSet(std::move(room._playerSet)),
         _connectionManager(room._connectionManager) {
     state = room.state.load();
-    endCondition = room.endCondition.load();
-    leftLimit = room.leftLimit.load();
     capacity = room.capacity.load();
     startTimerId = room.startTimerId.load();
-    endTimerId = room.endTimerId.load();
-    forwardingNode = room.forwardingNode.load();
 }
 
 bool Room::checkPassword(const string &password) const {
+    shared_lock<shared_mutex> lock(_dataMutex);
     return crypto::blake2B(password) == _passwordHash;
 }
 
-// TODO: Check if this would scramble the passwordHash
 void Room::updatePassword(const string &password) {
+    unique_lock<shared_mutex> lock(_dataMutex);
     _passwordHash = crypto::blake2B(password);
 }
 
-void Room::subscribe(int64_t userId) {
-    unique_lock<shared_mutex> lock(_sharedMutex);
-    _playerSet.insert(userId);
+void Room::subscribe(int64_t playerId) {
+    unique_lock<shared_mutex> lock(_playerMutex);
+    _playerSet.insert(playerId);
 }
 
-void Room::unsubscribe(int64_t userId) {
-    unique_lock<shared_mutex> lock(_sharedMutex);
-    _playerSet.erase(userId);
+void Room::unsubscribe(int64_t playerId) {
+    unique_lock<shared_mutex> lock(_playerMutex);
+    _playerSet.erase(playerId);
 }
 
 uint64_t Room::countGamer() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    for (const auto userId: _playerSet) {
-        const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
-        if (player->type == Player::Type::Gamer) {
-            counter++;
+    {
+        shared_lock<shared_mutex> lock(_playerMutex);
+        for (const auto playerId: _playerSet) {
+            const auto &player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            if (player->type == Player::Type::Gamer) {
+                counter++;
+            }
         }
     }
     return counter;
 }
 
-uint64_t Room::countGroup() const {
-    unordered_set<uint64_t> groupCounter;
-    {
-        shared_lock<shared_mutex> lock(_sharedMutex);
-        for (const auto userId: _playerSet) {
-            const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer &&
-                player->state == Player::State::Playing) {
-                groupCounter.insert(player->group);
-            }
-        }
-    }
-    return groupCounter.size();
-}
-
 uint64_t Room::countPlaying() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    for (const auto userId: _playerSet) {
-        const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Gamer &&
             player->state == Player::State::Playing) {
             counter++;
@@ -148,9 +95,9 @@ uint64_t Room::countPlaying() const {
 
 uint64_t Room::countSpectator() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    for (const auto userId: _playerSet) {
-        const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Spectator) {
             counter++;
         }
@@ -160,9 +107,9 @@ uint64_t Room::countSpectator() const {
 
 uint64_t Room::countStandby() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    for (const auto userId: _playerSet) {
-        const auto player = _connectionManager->getConnPtr(userId)->getContext<Player>();
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Gamer &&
             player->state == Player::State::Standby) {
             counter++;
@@ -183,36 +130,43 @@ Json::Value Room::parse(bool details) const {
     result["count"]["gamer"] = countGamer();
     result["count"]["spectator"] = countSpectator();
 
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    result["info"] = _info.copy();
+    {
+        shared_lock<shared_mutex> dataLock(_dataMutex);
+        result["info"] = _info.copy();
+        if (details) {
+            result["data"] = _data.copy();
+        }
+    }
+
     if (details) {
-        result["data"] = _data.copy();
         result["players"] = Json::arrayValue;
-        for (const auto userId: _playerSet) {
+        shared_lock<shared_mutex> playerLock(_playerMutex);
+        for (const auto playerId: _playerSet) {
             result["players"].append(
-                    _connectionManager->getConnPtr(userId)->getContext<Player>()->info()
+                    _connectionManager->getConnPtr(playerId)->getContext<Player>()->info()
             );
         }
     }
+
     return result;
 }
 
 void Room::publish(MessageJson &message, int64_t excludedId) {
-    shared_lock<shared_mutex> lock(_sharedMutex);
-    for (const auto userId: _playerSet) {
-        if (excludedId != userId) {
-            message.sendTo(_connectionManager->getConnPtr(userId));
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        if (excludedId != playerId) {
+            message.sendTo(_connectionManager->getConnPtr(playerId));
         }
     }
 }
 
 Json::Value Room::getData() const {
-    shared_lock<shared_mutex> lock(_sharedMutex);
+    shared_lock<shared_mutex> lock(_dataMutex);
     return _data.copy();
 }
 
 Json::Value Room::updateData(const Json::Value &data) {
-    shared_lock<shared_mutex> lock(_sharedMutex);
+    shared_lock<shared_mutex> lock(_dataMutex);
     for (const auto &item: data) {
         _data.modifyByPath(item["path"].asString(), item["value"]);
     }
@@ -220,19 +174,34 @@ Json::Value Room::updateData(const Json::Value &data) {
 }
 
 Json::Value Room::getInfo() const {
-    shared_lock<shared_mutex> lock(_sharedMutex);
+    shared_lock<shared_mutex> lock(_dataMutex);
     return _info.copy();
 }
 
 Json::Value Room::updateInfo(const Json::Value &data) {
-    shared_lock<shared_mutex> lock(_sharedMutex);
+    shared_lock<shared_mutex> lock(_dataMutex);
     for (const auto &item: data) {
         _info.modifyByPath(item["path"].asString(), item["value"]);
     }
     return _info.copy();
 }
 
-bool Room::tryCancelStart() {
+void Room::startGame(bool force) {
+    if (state != State::Standby ||
+        (!force && countStandby() > 0)) {
+        return;
+    }
+
+    state = State::Ready;
+    publish(MessageJson(enum_integer(Action::GameReady)).setMessageType(MessageType::Server));
+
+    startTimerId = app().getLoop()->runAfter(3, [this]() {
+        state = State::Playing;
+        publish(MessageJson(enum_integer(Action::GameStart)).setMessageType(MessageType::Server));
+    });
+}
+
+bool Room::cancelStart() {
     if (state == State::Ready) {
         app().getLoop()->invalidateTimer(startTimerId.load());
         state = State::Standby;
@@ -241,81 +210,32 @@ bool Room::tryCancelStart() {
     return false;
 }
 
-void Room::tryEnd(bool force) {
-    if (state != State::Playing) {
+void Room::endGame(bool force) {
+    if (state != State::Playing ||
+        (!force && countPlaying() > 0)) {
         return;
     }
-    switch (endCondition) {
-        case EndCondition::GroupLeft:
-            if (countGroup() > leftLimit) {
-                return;
-            }
-            break;
-        case EndCondition::Custom:
-            // TODO: Implement custom condition
-            [[fallthrough]];
-        case EndCondition::PlayerLeft:
-            if (countPlaying() > leftLimit) {
-                return;
-            }
-            break;
-        case EndCondition::TimesUp:
-            if (!force && countPlaying() > 1) {
-                return;
-            }
-            break;
-    }
+
     state = State::Standby;
     {
-        shared_lock<shared_mutex> lock(_sharedMutex);
-        for (auto &userId: _playerSet) {
-            _connectionManager->getConnPtr(
-                    userId
-            )->getContext<Player>()->state = Player::State::Standby;
+        shared_lock<shared_mutex> lock(_playerMutex);
+        for (auto &playerId: _playerSet) {
+            _connectionManager->getConnPtr(playerId)->getContext<Player>()->state = Player::State::Standby;
         }
     }
 
-    MessageJson message;
-    message.setMessageType(MessageType::Server);
-    message.setAction(enum_integer(Action::GameEnd));
-    publish(message);
-}
-
-void Room::tryStart() {
-    if (state != State::Standby || countStandby() > 0) {
-        return;
-    }
-
-    state = State::Ready;
-
-    MessageJson message;
-    message.setMessageType(MessageType::Server);
-    message.setAction(enum_integer(Action::GameReady));
-    publish(message);
-
-    startTimerId = app().getLoop()->runAfter(3, [this]() {
-        state = State::Playing;
-
-        Json::Value data;
-        data["transferNode"] = forwardingNode.load().toIpPort();
-
-        MessageJson message;
-        message.setMessageType(MessageType::Server);
-        message.setAction(enum_integer(Action::GameStart));
-        message.setData(data);
-        publish(message);
-    });
+    publish(MessageJson(enum_integer(Action::GameEnd)).setMessageType(MessageType::Server));
 }
 
 Room::~Room() {
-    tryCancelStart();
-    for (const auto userId: _playerSet) {
-        const auto &wsConnPtr = _connectionManager->getConnPtr(userId);
+    cancelStart();
+    endGame(true);
+    for (const auto playerId: _playerSet) {
+        const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
         wsConnPtr->getContext<Player>()->reset();
-        unsubscribe(userId);
 
-        MessageJson successMessage(enum_integer(Action::RoomRemove));
-        successMessage.setMessageType(MessageType::Server);
-        successMessage.sendTo(wsConnPtr);
+        MessageJson(enum_integer(Action::RoomRemove))
+                .setMessageType(MessageType::Server)
+                .sendTo(wsConnPtr);
     }
 }

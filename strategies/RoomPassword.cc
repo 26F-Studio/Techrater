@@ -58,6 +58,8 @@ void RoomPassword::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson 
         Json::Value data;
         data["playerId"] = player->playerId;
         data["password"] = password;
+
+        room->updatePassword(password);
         room->publish(MessageJson(_action).setData(std::move(data)));
     }, _action, wsConnPtr);
 }

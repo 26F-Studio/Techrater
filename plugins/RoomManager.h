@@ -34,7 +34,7 @@ namespace techmino::plugins {
 
         bool removeRoom(const std::string &roomId);
 
-        bool setRoom(const RoomPtr &room);
+        bool setRoom(RoomPtr &&room);
 
     private:
         mutable std::shared_mutex _sharedMutex;

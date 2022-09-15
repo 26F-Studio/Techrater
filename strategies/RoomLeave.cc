@@ -51,7 +51,7 @@ void RoomLeave::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &re
         if (room->empty()) {
             roomManager->removeRoom(room->roomId);
         } else {
-            room->tryEnd();
+            room->endGame();
         }
     }, _action, wsConnPtr);
 }

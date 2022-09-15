@@ -21,31 +21,28 @@ using namespace techmino::types;
 
 PlayerGroup::PlayerGroup() : MessageHandlerBase(enum_integer(Action::PlayerGroup)) {}
 
-bool PlayerGroup::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerGroup::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty() ||
-        player->type == Player::Type::Spectator ||
+    if (!player->getRoom() ||
+        player->type != Player::Type::Gamer ||
         player->state != Player::State::Standby) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("notAvailable");
     }
 
     if (!request.check(JsonValue::UInt64)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    return true;
+    return nullopt;
 }
 
-void PlayerGroup::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerGroup::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        wsConnPtr->getContext<Player>()->group = request.ref().asUInt64();
-        app().getPlugin<RoomManager>()->playerGroup(_action, wsConnPtr);
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["group"] = request.ref().asUInt64();
+
+        player->group = request.ref().asUInt64();
+        player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
     }, _action, wsConnPtr);
 }

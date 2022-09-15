@@ -39,14 +39,6 @@ namespace techmino::structures {
             Standby,
         };
 
-        // TODO: Support custom end conditions
-        enum class EndCondition {
-            Custom,
-            GroupLeft,
-            PlayerLeft,
-            TimesUp,
-        };
-
         explicit Room(
                 uint64_t capacity,
                 const std::string &password,
@@ -65,8 +57,6 @@ namespace techmino::structures {
         void unsubscribe(int64_t userId);
 
         [[nodiscard]] uint64_t countGamer() const;
-
-        [[nodiscard]] uint64_t countGroup() const;
 
         [[nodiscard]] uint64_t countPlaying() const;
 
@@ -90,27 +80,22 @@ namespace techmino::structures {
 
         Json::Value updateInfo(const Json::Value &data);
 
-        void tryStart();
+        void startGame(bool force = false);
 
-        bool tryCancelStart();
+        bool cancelStart();
 
-        void tryEnd(bool force = false);
+        void endGame(bool force = false);
 
         ~Room() override;
 
     public:
         const std::string roomId{drogon::utils::getUuid()};
         std::atomic<State> state{State::Standby};
-        std::atomic<EndCondition> endCondition{EndCondition::PlayerLeft};
-        std::atomic<uint64_t> leftLimit{1};
-        std::atomic<uint64_t> capacity;
-        std::atomic<uint64_t> startTimerId, endTimerId;
-        std::atomic<trantor::InetAddress> forwardingNode;
+        std::atomic<uint64_t> capacity, startTimerId;
 
     private:
         plugins::ConnectionManager *_connectionManager;
-        // TODO: Use finer-grained mutexes
-        mutable std::shared_mutex _sharedMutex;
+        mutable std::shared_mutex _dataMutex, _playerMutex;
         std::string _passwordHash;
         helpers::DataJson _info, _data;
         std::unordered_set<int64_t> _playerSet;

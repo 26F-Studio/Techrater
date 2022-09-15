@@ -21,32 +21,35 @@ using namespace techmino::types;
 
 PlayerReady::PlayerReady() : MessageHandlerBase(enum_integer(Action::PlayerReady)) {}
 
-bool PlayerReady::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerReady::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty() ||
-        player->type == Player::Type::Spectator ||
+    if (!player->getRoom() ||
+        player->type != Player::Type::Gamer ||
         player->state > Player::State::Ready) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("notAvailable");
     }
 
     if (!request.check(JsonValue::Bool)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    return true;
+    return nullopt;
 }
 
-void PlayerReady::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerReady::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
+    const auto isReady = request.ref().asBool();
     handleExceptions([&]() {
-        wsConnPtr->getContext<Player>()->state =
-                request.ref().asBool() ? Player::State::Ready : Player::State::Standby;
-        app().getPlugin<RoomManager>()->playerReady(_action, wsConnPtr);
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["isReady"] = isReady;
+
+        player->state = isReady ? Player::State::Ready : Player::State::Standby;
+        auto room = player->getRoom();
+        room->publish(MessageJson(_action).setData(std::move(data)));
+        if (isReady) {
+            room->startGame();
+        } else {
+            room->cancelStart();
+        }
     }, _action, wsConnPtr);
 }

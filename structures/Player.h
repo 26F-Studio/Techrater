@@ -26,7 +26,7 @@ namespace techmino::structures {
     class Player : public PlayerBase {
     public:
         enum class Role {
-            Normal = 1,
+            Normal,
             Admin,
             Super,
         };
@@ -56,11 +56,9 @@ namespace techmino::structures {
 
         void setRoom(std::shared_ptr<Room> room);
 
-        [[nodiscard]] std::string getCustomState() const;
-
         void setCustomState(std::string &&customState);
 
-        [[nodiscard]] std::string getConfig() const;
+        [[maybe_unused]] [[nodiscard]] std::string getConfig() const;
 
         void setConfig(std::string &&config);
 

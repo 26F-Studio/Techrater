@@ -3,7 +3,6 @@
 //
 
 #include <drogon/HttpAppFramework.h>
-#include <format>
 #include <plugins/EmailManager.h>
 #include <structures/Exceptions.h>
 
@@ -14,27 +13,7 @@ using namespace techmino::plugins;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-Email::Email(
-        std::string account,
-        std::string password,
-        std::string senderEmail,
-        std::string senderName,
-        string receiverEmail,
-        string subject,
-        string content,
-        bool isHTML,
-        std::shared_ptr<trantor::TcpClient> socket
-) : _account(std::move(account)),
-    _password(std::move(password)),
-    _senderEmail(std::move(senderEmail)),
-    _senderName(std::move(senderName)),
-    _receiverEmail(std::move(receiverEmail)),
-    _subject(std::move(subject)),
-    _content(std::move(content)),
-    _isHTML(isHTML),
-    _socket(std::move(socket)) {}
-
-void messageHandler(
+void EmailManager::messageHandler(
         const TcpConnectionPtr &connPtr,
         MsgBuffer *msgBuffer,
         const shared_ptr<Email> &email,
@@ -215,7 +194,6 @@ void messageHandler(
                         throw EmailException("Unsupported state");
                 }
                 break;
-                break;
             default:
                 throw EmailException("Unsupported state");
         }
@@ -224,6 +202,26 @@ void messageHandler(
         callback(false, receivedMsg);
     }
 }
+
+EmailManager::Email::Email(
+        std::string account,
+        std::string password,
+        std::string senderEmail,
+        std::string senderName,
+        string receiverEmail,
+        string subject,
+        string content,
+        bool isHTML,
+        std::shared_ptr<trantor::TcpClient> socket
+) : _account(std::move(account)),
+    _password(std::move(password)),
+    _senderEmail(std::move(senderEmail)),
+    _senderName(std::move(senderName)),
+    _receiverEmail(std::move(receiverEmail)),
+    _subject(std::move(subject)),
+    _content(std::move(content)),
+    _isHTML(isHTML),
+    _socket(std::move(socket)) {}
 
 void EmailManager::initAndStart(const Json::Value &config) {
     if (!(
@@ -256,7 +254,7 @@ void EmailManager::smtp(
         const string &subject,
         const string &content,
         bool isHTML,
-        const function<void(const string &)> &callback
+        const function<void(bool, const string &)> &callback
 ) {
     const auto resolver = app().getResolver();
     resolver->resolve(_server, [=, this](const InetAddress &resolvedAddr) {
@@ -284,7 +282,7 @@ void EmailManager::smtp(
                 isHTML,
                 tcpSocket
         ));
-        tcpSocket->setConnectionCallback([emailUuid](const TcpConnectionPtr &connPtr) {
+        tcpSocket->setConnectionCallback([emailUuid, this](const TcpConnectionPtr &connPtr) {
             if (connPtr->connected()) {
                 LOG_TRACE << "Connection established!";
             } else {
@@ -292,12 +290,12 @@ void EmailManager::smtp(
                 _emailMap.erase(emailUuid);
             }
         });
-        tcpSocket->setConnectionErrorCallback([emailUuid]() {
+        tcpSocket->setConnectionErrorCallback([emailUuid, this]() {
             LOG_ERROR << "Bad Server address";
             _emailMap.erase(emailUuid);
         });
         tcpSocket->setMessageCallback(
-                [emailUuid, callback](const TcpConnectionPtr &connPtr, MsgBuffer *msg) {
+                [emailUuid, callback, this](const TcpConnectionPtr &connPtr, MsgBuffer *msg) {
                     messageHandler(connPtr, msg, _emailMap[emailUuid], callback);
                 }
         );

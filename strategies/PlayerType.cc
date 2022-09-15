@@ -21,40 +21,36 @@ using namespace techmino::types;
 
 PlayerType::PlayerType() : MessageHandlerBase(enum_integer(Action::PlayerType)) {}
 
-bool PlayerType::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerType::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty() ||
+    if (!player->getRoom() ||
         player->state != Player::State::Standby) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("notAvailable");
     }
 
     if (!request.check(JsonValue::String)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    if (!enum_cast<Player::Type>(request.ref().asString()).has_value()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidType"));
-        message.sendTo(wsConnPtr);
-        return false;
+
+    const auto castedType = enum_cast<Player::Type>(request.ref().asString());
+    if (!castedType.has_value()) {
+        return i18n("invalidType");
     }
-    return true;
+    if (castedType.value() == Player::Type::Gamer && player->getRoom()->full()) {
+        return i18n("roomFull");
+    }
+
+    return nullopt;
 }
 
-void PlayerType::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerType::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        app().getPlugin<RoomManager>()->playerType(
-                _action,
-                wsConnPtr,
-                enum_cast<Player::Type>(request.ref().asString()).value()
-        );
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["type"] = request.ref().asString();
+
+        player->type = enum_cast<Player::Type>(request.ref().asString()).value();
+        player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
     }, _action, wsConnPtr);
 }

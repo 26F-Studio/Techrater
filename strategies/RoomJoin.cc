@@ -42,7 +42,7 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
             bool spectate = false;
             if (room->state == Room::State::Playing) {
                 spectate = true;
-            } else if (!room->full() && room->tryCancelStart()) {
+            } else if (!room->full() && room->cancelStart()) {
                 player->type = Player::Type::Gamer;
             }
             player->setRoom(room);
@@ -57,11 +57,8 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                     player->playerId
             );
 
-            // TODO: Implement spectate logics
             if (spectate) {
-                MessageJson spectateMessage(enum_integer(Action::GameSpectate));
-                spectateMessage.setData(room->forwardingNode.load().toIpPort());
-                spectateMessage.sendTo(wsConnPtr);
+                // TODO: Implement spectate logics
             }
         } else {
             throw MessageException("wrongPassword");

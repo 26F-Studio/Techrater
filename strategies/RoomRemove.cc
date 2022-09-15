@@ -51,9 +51,6 @@ void RoomRemove::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         } else {
             room = player->getRoom();
         }
-        Json::Value data;
-        data["playerId"] = player->playerId;
-        room->publish(MessageJson(_action).setData(std::move(data)));
         roomManager->removeRoom(room->roomId);
     }, _action, wsConnPtr);
 }

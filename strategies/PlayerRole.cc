@@ -21,74 +21,69 @@ using namespace techmino::types;
 
 PlayerRole::PlayerRole() : MessageHandlerBase(enum_integer(Action::PlayerRole)) {}
 
-bool PlayerRole::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerRole::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty() ||
+    if (!player->getRoom() ||
+        player->role < Player::Role::Admin ||
         player->state != Player::State::Standby) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("notAvailable");
     }
 
-    if (!request.check("targetUserId", JsonValue::Int64) ||
+    /// @note Reject if no playerId or role is specified.
+    if (!request.check("playerId", JsonValue::Int64) ||
+        request["playerId"].asInt64() == player->playerId ||
         !request.check("role", JsonValue::String)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    auto castedRole = enum_cast<Player::Role>(request["role"].asString());
-    if (!castedRole.has_value()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidRole"));
-        message.sendTo(wsConnPtr);
-        return false;
-    }
-    if (player->role < castedRole.value()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("noPermission"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
 
     const auto &targetPlayer = app().getPlugin<ConnectionManager>()->getConnPtr(
-            request["targetUserId"].asInt64()
+            request["playerId"].asInt64()
     )->getContext<Player>();
-    if (!targetPlayer ||
-        player->playerId == targetPlayer->playerId ||
-        player->getRoomId() != targetPlayer->getRoomId()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidTarget"));
-        message.sendTo(wsConnPtr);
-        return false;
+    const auto castedRole = enum_cast<Player::Role>(request["role"].asString());
+    /// @note Reject if role is invalid.
+    if (!castedRole.has_value()) {
+        return i18n("invalidRole");
     }
-    return true;
+    /// @note Reject if given role is higher than the executor,
+    ///       or the executor's role is lower than the target's.
+    if (player->role < castedRole.value() ||
+        player->role <= targetPlayer->role) {
+        return i18n("noPermission");
+    }
+    if (player->getRoom()->roomId != targetPlayer->getRoom()->roomId) {
+        return i18n("invalidTarget");
+    }
+    return nullopt;
 }
 
-void PlayerRole::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerRole::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
+    const auto &targetPlayer = app().getPlugin<ConnectionManager>()->getConnPtr(
+            request["playerId"].asInt64()
+    )->getContext<Player>();
+    const auto targetRole = enum_cast<Player::Role>(request["role"].asString()).value();
     handleExceptions([&]() {
-        auto roomManager = app().getPlugin<RoomManager>();
-        auto targetRole = enum_cast<Player::Role>(request["role"].asString()).value();
-        const auto &targetConnPtr = app().getPlugin<ConnectionManager>()->getConnPtr(
-                request["targetUserId"].asInt64()
-        );
-        const auto &player = wsConnPtr->getContext<Player>();
-        const auto &targetPlayer = targetConnPtr->getContext<Player>();
-
+        const auto room = player->getRoom();
         if (player->role == targetRole) {
-            player->role = targetPlayer->role.load();
+            /// @note Switching roles
+            const auto executorRole = targetPlayer->role.load();
+            player->role = executorRole;
             targetPlayer->role = targetRole;
-            roomManager->playerRole(_action, wsConnPtr);
-            roomManager->playerRole(_action, targetConnPtr);
+
+            Json::Value data;
+            data["playerId"] = targetPlayer->playerId;
+            data["role"] = string(enum_name(targetRole));
+            room->publish(MessageJson(_action).setData(data));
+            data["playerId"] = player->playerId;
+            data["role"] = string(enum_name(executorRole));
+            room->publish(MessageJson(_action).setData(data));
         } else {
             targetPlayer->role = targetRole;
-            roomManager->playerRole(_action, wsConnPtr);
+
+            Json::Value data;
+            data["playerId"] = targetPlayer->playerId;
+            data["role"] = string(enum_name(targetRole));
+            room->publish(MessageJson(_action).setData(data));
         }
     }, _action, wsConnPtr);
 }

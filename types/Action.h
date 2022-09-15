@@ -19,7 +19,6 @@ namespace techmino::types {
         PlayerConfig = 1200,
         PlayerFinish,
         PlayerGroup,
-        PlayerPing,
         PlayerReady,
         PlayerRole,
         PlayerState,

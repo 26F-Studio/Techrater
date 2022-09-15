@@ -21,29 +21,26 @@ using namespace techmino::types;
 
 PlayerConfig::PlayerConfig() : MessageHandlerBase(enum_integer(Action::PlayerConfig)) {}
 
-bool PlayerConfig::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+optional<string> PlayerConfig::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player || player->getRoomId().empty()) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("notAvailable"));
-        message.sendTo(wsConnPtr);
-        return false;
+    if (!player->getRoom()) {
+        return i18n("notAvailable");
     }
 
     if (!request.check(JsonValue::String)) {
-        MessageJson message(_action);
-        message.setMessageType(MessageType::Failed);
-        message.setReason(i18n("invalidArguments"));
-        message.sendTo(wsConnPtr);
-        return false;
+        return i18n("invalidArguments");
     }
-    return true;
+    return nullopt;
 }
 
-void PlayerConfig::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) {
+void PlayerConfig::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        wsConnPtr->getContext<Player>()->setConfig(move(request.ref().asString()));
-        app().getPlugin<RoomManager>()->playerConfig(_action, wsConnPtr);
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["config"] = request.ref().asString();
+
+        player->setConfig(std::move(request.ref().asString()));
+        player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
     }, _action, wsConnPtr);
 }

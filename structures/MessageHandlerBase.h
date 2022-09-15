@@ -25,6 +25,6 @@ namespace techmino::structures {
         virtual ~MessageHandlerBase() = default;
 
     protected:
-        [[maybe_unused]] const int _action;
+        const int _action;
     };
 }
