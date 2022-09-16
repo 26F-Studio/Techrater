@@ -29,7 +29,7 @@ void EmailManager::messageHandler(
     uint32_t responseCode = stoul(receivedMsg.substr(0, 3));
 
     if (email->_state == EmailState::Close) {
-        /*Callback here for succeed delivery is probable*/
+        /** Callback here for succeed delivery is probable */
         callback(true, "EMail sent.");
         return;
     }
