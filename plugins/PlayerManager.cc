@@ -20,6 +20,10 @@ using namespace techmino::structures;
 using namespace techmino::types;
 using namespace techmino::utils;
 
+PlayerManager::PlayerManager() :
+        _dataMapper(app().getDbClient()),
+        _playerMapper(app().getDbClient()) {}
+
 void PlayerManager::initAndStart(const Json::Value &config) {
     if (!(
             config["tokenBucket"]["ip"]["interval"].isUInt64() &&
@@ -67,9 +71,6 @@ void PlayerManager::initAndStart(const Json::Value &config) {
         LOG_ERROR << e.what();
         abort();
     }
-
-    _playerMapper = make_unique<orm::Mapper<techrater::Player>>(app().getDbClient());
-
     LOG_INFO << "PlayerManager loaded.";
 }
 
@@ -125,7 +126,7 @@ void PlayerManager::verifyEmail(const string &email) {
 
 string PlayerManager::seedEmail(const string &email) {
     try {
-        const auto player = _playerMapper->findOne(orm::Criteria(
+        const auto player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
@@ -145,15 +146,19 @@ tuple<RedisToken, bool> PlayerManager::loginEmailCode(const string &email, const
     _checkEmailCode(email, code);
 
     techrater::Player player;
-    if (_playerMapper->count(orm::Criteria(
+    if (_playerMapper.count(orm::Criteria(
             techrater::Player::Cols::_email,
             orm::CompareOperator::EQ,
             email
     )) == 0) {
         player.setEmail(email);
-        _playerMapper->insert(player);
+        _playerMapper.insert(player);
+
+        techrater::Data data;
+        data.setId(player.getValueOfId());
+        _dataMapper.insert(data);
     } else {
-        player = _playerMapper->findOne(orm::Criteria(
+        player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
@@ -168,7 +173,7 @@ tuple<RedisToken, bool> PlayerManager::loginEmailCode(const string &email, const
 
 RedisToken PlayerManager::loginEmailPassword(const string &email, const string &password) {
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
+        auto player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
@@ -207,7 +212,7 @@ void PlayerManager::resetEmail(
     _checkEmailCode(email, code);
 
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
+        auto player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
@@ -215,7 +220,7 @@ void PlayerManager::resetEmail(
         player.setPasswordHash(crypto::blake2B(
                 newPassword + crypto::blake2B(to_string(player.getValueOfId()))
         ));
-        _playerMapper->update(player);
+        _playerMapper.update(player);
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
@@ -234,11 +239,11 @@ void PlayerManager::migrateEmail(
     _checkEmailCode(newEmail, code);
 
     try {
-        auto player = _playerMapper->findByPrimaryKey(userId);
+        auto player = _playerMapper.findByPrimaryKey(userId);
         if (player.getValueOfEmail() == newEmail) {
             return;
         }
-        if (_playerMapper->count(orm::Criteria(
+        if (_playerMapper.count(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 newEmail
@@ -250,7 +255,7 @@ void PlayerManager::migrateEmail(
             );
         }
         player.setEmail(newEmail);
-        _playerMapper->update(player);
+        _playerMapper.update(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
@@ -267,10 +272,10 @@ void PlayerManager::deactivateEmail(
         const string &code
 ) {
     try {
-        auto player = _playerMapper->findByPrimaryKey(userId);
+        auto player = _playerMapper.findByPrimaryKey(userId);
         _checkEmailCode(player.getValueOfEmail(), code);
 
-        _playerMapper->deleteOne(player);
+        _playerMapper.deleteOne(player);
     } catch (const redis_exception::KeyNotFound &e) {
         LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
@@ -281,8 +286,29 @@ void PlayerManager::deactivateEmail(
     }
 }
 
+string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
+    int64_t targetId = userId;
+    NO_EXCEPTION(
+            targetId = _playerRedis->getIdByAccessToken(accessToken);
+    )
+    try {
+        auto player = _playerMapper.findOne(orm::Criteria(
+                techrater::Player::Cols::_id,
+                orm::CompareOperator::EQ,
+                targetId
+        ));
+        return player.getValueOfAvatar();
+    } catch (const orm::UnexpectedRows &e) {
+        LOG_DEBUG << "Unexpected rows: " << e.what();
+        throw ResponseException(
+                i18n("userNotFound"),
+                ResultCode::NotFound,
+                k404NotFound
+        );
+    }
+}
 
-Json::Value PlayerManager::getUserInfo(
+Json::Value PlayerManager::getPlayerInfo(
         const string &accessToken,
         int64_t userId
 ) {
@@ -291,7 +317,7 @@ Json::Value PlayerManager::getUserInfo(
             targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
+        auto player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_id,
                 orm::CompareOperator::EQ,
                 targetId
@@ -313,11 +339,11 @@ Json::Value PlayerManager::getUserInfo(
     }
 }
 
-void PlayerManager::updateUserInfo(
-        const int64_t userId,
+void PlayerManager::updatePlayerInfo(
+        int64_t userId,
         RequestJson request
 ) {
-    auto player = _playerMapper->findByPrimaryKey(userId);
+    auto player = _playerMapper.findByPrimaryKey(userId);
     if (player.getPasswordHash() == nullptr) {
         if (!request.check("password", JsonValue::String)) {
             throw ResponseException(
@@ -334,21 +360,33 @@ void PlayerManager::updateUserInfo(
         player.setAvatarHash(crypto::blake2B(request["avatar"].asString()));
     }
     player.updateByJson(request.ref());
-    _playerMapper->update(player);
+    _playerMapper.update(player);
 }
 
-string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
+Json::Value PlayerManager::getPlayerData(
+        const string &accessToken,
+        int64_t userId
+) {
     int64_t targetId = userId;
     NO_EXCEPTION(
             targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
     try {
-        auto player = _playerMapper->findOne(orm::Criteria(
-                techrater::Player::Cols::_id,
+        auto data = _dataMapper.findOne(orm::Criteria(
+                techrater::Data::Cols::_id,
                 orm::CompareOperator::EQ,
                 targetId
-        ));
-        return player.getValueOfAvatar();
+        )).toJson();
+        data.removeMember("password_hash");
+        data.removeMember("avatar");
+        if (userId > 0) {
+            data.removeMember("settings");
+            data.removeMember("keymaps");
+            data.removeMember("touch_1");
+            data.removeMember("touch_2");
+            data.removeMember("touch_3");
+        }
+        return data;
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
@@ -357,6 +395,15 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
                 k404NotFound
         );
     }
+}
+
+void PlayerManager::updatePlayerData(
+        int64_t userId,
+        RequestJson request
+) {
+    auto data = _dataMapper.findByPrimaryKey(userId);
+    data.updateByJson(request.ref());
+    _dataMapper.update(data);
 }
 
 bool PlayerManager::ipLimit(const string &ip) const {

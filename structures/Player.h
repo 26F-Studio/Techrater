@@ -58,9 +58,11 @@ namespace techmino::structures {
 
         void setCustomState(std::string &&customState);
 
-        [[maybe_unused]] [[nodiscard]] std::string getConfig() const;
-
         void setConfig(std::string &&config);
+
+        void appendHistory(const std::string &history);
+
+        [[nodiscard]] std::string history() const;
 
         [[nodiscard]] Json::Value info() const;
 
@@ -74,8 +76,9 @@ namespace techmino::structures {
         std::atomic<Type> type;
 
     private:
-        mutable std::shared_mutex _sharedMutex;
+        mutable std::shared_mutex _dataMutex, _historyMutex;
         std::shared_ptr<Room> _room;
         std::string _customState, _config;
+        std::string _history;
     };
 }

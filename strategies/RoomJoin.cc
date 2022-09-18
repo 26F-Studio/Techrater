@@ -39,10 +39,7 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
     handleExceptions([&]() {
         auto room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
         if (room->checkPassword(request["password"].asString())) {
-            bool spectate = false;
-            if (room->state == Room::State::Playing) {
-                spectate = true;
-            } else if (!room->full() && room->cancelStart()) {
+            if (!room->full() && room->cancelStart()) {
                 player->type = Player::Type::Gamer;
             }
             player->setRoom(room);
@@ -56,10 +53,6 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                     MessageJson(_action).setData(player->info()),
                     player->playerId
             );
-
-            if (spectate) {
-                // TODO: Implement spectate logics
-            }
         } else {
             throw MessageException("wrongPassword");
         }

@@ -17,7 +17,7 @@ namespace techmino::ws::v1 {
 
     public:
         WS_PATH_LIST_BEGIN
-            WS_PATH_ADD("/tech/ws/v2", "techmino::filters::CheckAccessToken")
+            WS_PATH_ADD("/tech/ws/v2", "techmino::filters::CheckAccessToken");
         WS_PATH_LIST_END
 
         Websocket();

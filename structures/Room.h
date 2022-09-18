@@ -48,6 +48,12 @@ namespace techmino::structures {
 
         Room(Room &&room) noexcept;
 
+        ~Room() override;
+
+        bool empty() const;
+
+        bool full() const;
+
         [[nodiscard]] bool checkPassword(const std::string &password) const;
 
         void updatePassword(const std::string &password);
@@ -56,17 +62,11 @@ namespace techmino::structures {
 
         void unsubscribe(int64_t userId);
 
-        [[nodiscard]] uint64_t countGamer() const;
-
         [[nodiscard]] uint64_t countPlaying() const;
 
         [[nodiscard]] uint64_t countSpectator() const;
 
         [[nodiscard]] uint64_t countStandby() const;
-
-        bool empty() const;
-
-        bool full() const;
 
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
@@ -80,13 +80,17 @@ namespace techmino::structures {
 
         Json::Value updateInfo(const Json::Value &data);
 
+        void appendChat(Json::Value &&chat);
+
         void startGame(bool force = false);
 
         bool cancelStart();
 
         void endGame(bool force = false);
 
-        ~Room() override;
+
+    private:
+        [[nodiscard]] uint64_t countGamer() const;
 
     public:
         const std::string roomId{drogon::utils::getUuid()};
@@ -94,10 +98,11 @@ namespace techmino::structures {
         std::atomic<uint64_t> capacity, startTimerId;
 
     private:
+        mutable std::shared_mutex _dataMutex, _playerMutex, _chatMutex;
         plugins::ConnectionManager *_connectionManager;
-        mutable std::shared_mutex _dataMutex, _playerMutex;
         std::string _passwordHash;
         helpers::DataJson _info, _data;
         std::unordered_set<int64_t> _playerSet;
+        std::vector<Json::Value> _chatList;
     };
 }

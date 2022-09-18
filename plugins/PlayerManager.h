@@ -7,6 +7,7 @@
 #include <drogon/plugins/Plugin.h>
 #include <helpers/I18nHelper.h>
 #include <helpers/RequestJson.h>
+#include <models/Data.h>
 #include <models/Player.h>
 #include <structures/PlayerRedis.h>
 
@@ -18,6 +19,8 @@ namespace techmino::plugins {
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
     public:
+        PlayerManager();
+
         void initAndStart(const Json::Value &config) override;
 
         void shutdown() override;
@@ -57,19 +60,29 @@ namespace techmino::plugins {
                 const std::string &code
         );
 
-        [[nodiscard]] Json::Value getUserInfo(
+        [[nodiscard]] std::string getAvatar(
                 const std::string &accessToken,
                 int64_t userId
         );
 
-        void updateUserInfo(
+        [[nodiscard]] Json::Value getPlayerInfo(
+                const std::string &accessToken,
+                int64_t userId
+        );
+
+        void updatePlayerInfo(
                 int64_t userId,
                 helpers::RequestJson request
         );
 
-        [[nodiscard]] std::string getAvatar(
+        [[nodiscard]] Json::Value getPlayerData(
                 const std::string &accessToken,
                 int64_t userId
+        );
+
+        void updatePlayerData(
+                int64_t userId,
+                helpers::RequestJson request
         );
 
         [[nodiscard]] bool ipLimit(const std::string &ip) const;
@@ -81,7 +94,8 @@ namespace techmino::plugins {
         uint64_t _ipMaxCount{}, _emailMaxCount{};
 
         std::unique_ptr<techmino::structures::PlayerRedis> _playerRedis;
-        std::unique_ptr<drogon::orm::Mapper<drogon_model::techrater::Player>> _playerMapper;
+        drogon::orm::Mapper<drogon_model::techrater::Data> _dataMapper;
+        drogon::orm::Mapper<drogon_model::techrater::Player> _playerMapper;
 
         void _checkEmailCode(const std::string &email, const std::string &code);
     };

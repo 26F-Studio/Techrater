@@ -46,6 +46,23 @@ Room::Room(Room &&room) noexcept:
     startTimerId = room.startTimerId.load();
 }
 
+Room::~Room() {
+    cancelStart();
+    endGame(true);
+    for (const auto playerId: _playerSet) {
+        const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
+        wsConnPtr->getContext<Player>()->reset();
+
+        MessageJson(enum_integer(Action::RoomRemove))
+                .setMessageType(MessageType::Server)
+                .sendTo(wsConnPtr);
+    }
+}
+
+bool Room::empty() const { return countGamer() == 0; }
+
+bool Room::full() const { return countGamer() >= capacity; }
+
 bool Room::checkPassword(const string &password) const {
     shared_lock<shared_mutex> lock(_dataMutex);
     return crypto::blake2B(password) == _passwordHash;
@@ -64,20 +81,6 @@ void Room::subscribe(int64_t playerId) {
 void Room::unsubscribe(int64_t playerId) {
     unique_lock<shared_mutex> lock(_playerMutex);
     _playerSet.erase(playerId);
-}
-
-uint64_t Room::countGamer() const {
-    uint64_t counter{};
-    {
-        shared_lock<shared_mutex> lock(_playerMutex);
-        for (const auto playerId: _playerSet) {
-            const auto &player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer) {
-                counter++;
-            }
-        }
-    }
-    return counter;
 }
 
 uint64_t Room::countPlaying() const {
@@ -118,10 +121,6 @@ uint64_t Room::countStandby() const {
     return counter;
 }
 
-bool Room::empty() const { return countGamer() == 0; }
-
-bool Room::full() const { return countGamer() >= capacity; }
-
 Json::Value Room::parse(bool details) const {
     Json::Value result;
     result["roomId"] = roomId;
@@ -140,11 +139,21 @@ Json::Value Room::parse(bool details) const {
 
     if (details) {
         result["players"] = Json::arrayValue;
-        shared_lock<shared_mutex> playerLock(_playerMutex);
-        for (const auto playerId: _playerSet) {
-            result["players"].append(
-                    _connectionManager->getConnPtr(playerId)->getContext<Player>()->info()
-            );
+        result["chats"] = Json::arrayValue;
+        {
+            shared_lock<shared_mutex> playerLock(_playerMutex);
+            for (const auto playerId: _playerSet) {
+                result["players"].append(
+                        _connectionManager->getConnPtr(playerId)->getContext<Player>()->info()
+                );
+            }
+        }
+
+        {
+            shared_lock<shared_mutex> lock(_chatMutex);
+            for (const auto &chat: _chatList) {
+                result["chats"].append(chat);
+            }
         }
     }
 
@@ -184,6 +193,11 @@ Json::Value Room::updateInfo(const Json::Value &data) {
         _info.modifyByPath(item["path"].asString(), item["value"]);
     }
     return _info.copy();
+}
+
+void Room::appendChat(Json::Value &&chat) {
+    unique_lock<shared_mutex> lock(_chatMutex);
+    _chatList.push_back(std::move(chat));
 }
 
 void Room::startGame(bool force) {
@@ -227,15 +241,16 @@ void Room::endGame(bool force) {
     publish(MessageJson(enum_integer(Action::GameEnd)).setMessageType(MessageType::Server));
 }
 
-Room::~Room() {
-    cancelStart();
-    endGame(true);
-    for (const auto playerId: _playerSet) {
-        const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
-        wsConnPtr->getContext<Player>()->reset();
-
-        MessageJson(enum_integer(Action::RoomRemove))
-                .setMessageType(MessageType::Server)
-                .sendTo(wsConnPtr);
+uint64_t Room::countGamer() const {
+    uint64_t counter{};
+    {
+        shared_lock<shared_mutex> lock(_playerMutex);
+        for (const auto playerId: _playerSet) {
+            const auto &player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            if (player->type == Player::Type::Gamer) {
+                counter++;
+            }
+        }
     }
+    return counter;
 }

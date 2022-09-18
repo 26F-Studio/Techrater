@@ -15,10 +15,21 @@ using namespace techmino::types;
 
 Player::Player() : _playerManager(app().getPlugin<PlayerManager>()) {}
 
+void Player::getAvatar(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
+    ResponseJson response;
+    handleExceptions([&]() {
+        response.setData(_playerManager->getAvatar(
+                req->attributes()->get<string>("accessToken"),
+                req->attributes()->get<int64_t>("playerId")
+        ));
+    }, response);
+    response.httpCallback(callback);
+}
+
 void Player::getInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
-        response.setData(_playerManager->getUserInfo(
+        response.setData(_playerManager->getPlayerInfo(
                 req->attributes()->get<string>("accessToken"),
                 req->attributes()->get<int64_t>("playerId")
         ));
@@ -29,7 +40,7 @@ void Player::getInfo(const HttpRequestPtr &req, function<void(const HttpResponse
 void Player::updateInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
-        _playerManager->updateUserInfo(
+        _playerManager->updatePlayerInfo(
                 req->attributes()->get<int64_t>("playerId"),
                 req->attributes()->get<RequestJson>("requestJson")
         );
@@ -37,13 +48,24 @@ void Player::updateInfo(const HttpRequestPtr &req, function<void(const HttpRespo
     response.httpCallback(callback);
 }
 
-void Player::getAvatar(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
+void Player::getData(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
-        response.setData(_playerManager->getAvatar(
+        response.setData(_playerManager->getPlayerInfo(
                 req->attributes()->get<string>("accessToken"),
                 req->attributes()->get<int64_t>("playerId")
         ));
+    }, response);
+    response.httpCallback(callback);
+}
+
+void Player::updateData(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
+    ResponseJson response;
+    handleExceptions([&]() {
+        _playerManager->updatePlayerInfo(
+                req->attributes()->get<int64_t>("playerId"),
+                req->attributes()->get<RequestJson>("requestJson")
+        );
     }, response);
     response.httpCallback(callback);
 }

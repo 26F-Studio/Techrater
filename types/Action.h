@@ -6,13 +6,9 @@
 
 namespace techmino::types {
     enum class Action {
-        /// Forward actions
-        ForwardData = 1000,
-
         /// Game actions
         GameEnd = 1100,
         GameReady,
-        GameSpectate,
         GameStart,
 
         /// Player actions
@@ -22,10 +18,12 @@ namespace techmino::types {
         PlayerReady,
         PlayerRole,
         PlayerState,
+        PlayerStream,
         PlayerType,
 
         /// Room actions
-        RoomCreate = 1300,
+        RoomChat = 1300,
+        RoomCreate,
         RoomDataGet,
         RoomDataUpdate,
         RoomInfoGet,

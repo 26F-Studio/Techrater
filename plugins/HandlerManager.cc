@@ -10,7 +10,9 @@
 #include <strategies/PlayerReady.h>
 #include <strategies/PlayerRole.h>
 #include <strategies/PlayerState.h>
+#include <strategies/PlayerStream.h>
 #include <strategies/PlayerType.h>
+#include <strategies/RoomChat.h>
 #include <strategies/RoomCreate.h>
 #include <strategies/RoomDataGet.h>
 #include <strategies/RoomDataUpdate.h>
@@ -40,8 +42,10 @@ void HandlerManager::initAndStart(const Json::Value &config) {
     _handlerFactory.registerHandler<PlayerReady>(enum_integer(Action::PlayerReady));
     _handlerFactory.registerHandler<PlayerRole>(enum_integer(Action::PlayerRole));
     _handlerFactory.registerHandler<PlayerState>(enum_integer(Action::PlayerState));
+    _handlerFactory.registerHandler<PlayerStream>(enum_integer(Action::PlayerStream));
     _handlerFactory.registerHandler<PlayerType>(enum_integer(Action::PlayerType));
 
+    _handlerFactory.registerHandler<RoomChat>(enum_integer(Action::RoomChat));
     _handlerFactory.registerHandler<RoomCreate>(enum_integer(Action::RoomCreate));
     _handlerFactory.registerHandler<RoomDataGet>(enum_integer(Action::RoomDataGet));
     _handlerFactory.registerHandler<RoomDataUpdate>(enum_integer(Action::RoomDataUpdate));
