@@ -9,7 +9,6 @@
 #include <structures/Exceptions.h>
 #include <utils/crypto.h>
 #include <utils/data.h>
-#include <utils/datetime.h>
 #include <utils/io.h>
 
 using namespace drogon;
