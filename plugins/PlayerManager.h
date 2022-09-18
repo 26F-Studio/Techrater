@@ -7,6 +7,7 @@
 #include <drogon/plugins/Plugin.h>
 #include <helpers/I18nHelper.h>
 #include <helpers/RequestJson.h>
+#include <helpers/ResponseJson.h>
 #include <models/Data.h>
 #include <models/Player.h>
 #include <structures/PlayerRedis.h>
@@ -29,7 +30,10 @@ namespace techmino::plugins {
 
         structures::RedisToken refresh(const std::string &refreshToken);
 
-        void verifyEmail(const std::string &email);
+        void verifyEmail(
+                const std::string &email,
+                const std::function<void(const drogon::HttpResponsePtr &)> &callback
+        );
 
         std::string seedEmail(const std::string &email);
 

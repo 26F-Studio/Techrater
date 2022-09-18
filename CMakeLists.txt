@@ -69,4 +69,5 @@ target_sources(${PROJECT_NAME}
 
 add_subdirectory(test)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json DESTINATION ${CMAKE_BINARY_DIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/verifyEmail.html
+        DESTINATION ${CMAKE_BINARY_DIR})

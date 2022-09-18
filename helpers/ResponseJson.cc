@@ -35,7 +35,7 @@ void ResponseJson::setStatusCode(drogon::HttpStatusCode code) { _statusCode = co
 
 void ResponseJson::setMessage(const string &message) { _value["message"] = message; }
 
-void ResponseJson::setData(Json::Value data) { _value["data"] = move(data); }
+void ResponseJson::setData(Json::Value data) { _value["data"] = std::move(data); }
 
 void ResponseJson::setReason(const exception &e) { setReason(e.what()); }
 
@@ -43,13 +43,13 @@ void ResponseJson::setReason(const exception &e) { setReason(e.what()); }
 
 void ResponseJson::setReason(const string &reason) { _value["reason"] = reason; }
 
-void ResponseJson::httpCallback(const function<void(const drogon::HttpResponsePtr &)> &callback) {
+void ResponseJson::httpCallback(const function<void(const drogon::HttpResponsePtr &)> &callback) const {
     auto httpJsonResponse = HttpResponse::newHttpJsonResponse(_value);
     httpJsonResponse->setStatusCode(_statusCode);
     callback(httpJsonResponse);
 }
 
-void ResponseJson::httpCallback(const ResponseJson::HttpCallback &callback, const string &cors) {
+void ResponseJson::httpCallback(const ResponseJson::HttpCallback &callback, const string &cors) const {
     auto httpJsonResponse = HttpResponse::newHttpJsonResponse(_value);
     httpJsonResponse->setStatusCode(_statusCode);
     httpJsonResponse->addHeader("Access-Control-Allow-Origin", cors);

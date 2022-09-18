@@ -36,12 +36,12 @@ namespace techmino::helpers {
 
         void setReason(const std::string &reason);
 
-        void httpCallback(const HttpCallback &callback);
+        void httpCallback(const HttpCallback &callback) const;
 
         void httpCallback(
                 const HttpCallback &callback,
                 const std::string &cors
-        );
+        ) const;
 
     private:
         drogon::HttpStatusCode _statusCode = drogon::k200OK;

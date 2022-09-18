@@ -3,10 +3,12 @@
 //
 
 #include <drogon/HttpAppFramework.h>
+#include <magic_enum.hpp>
 #include <plugins/EmailManager.h>
 #include <structures/Exceptions.h>
 
 using namespace drogon;
+using namespace magic_enum;
 using namespace std;
 using namespace trantor;
 using namespace techmino::plugins;
@@ -28,15 +30,15 @@ void EmailManager::messageHandler(
     LOG_TRACE << "receive: " << receivedMsg;
     uint32_t responseCode = stoul(receivedMsg.substr(0, 3));
 
-    if (email->_state == EmailState::Close) {
-        /** Callback here for succeed delivery is probable */
-        callback(true, "EMail sent.");
+    if (email->state == EmailState::Close) {
+        callback(true, receivedMsg);
+        connPtr->forceClose();
         return;
     }
     try {
         switch (responseCode) {
             case 220:
-                switch (email->_state) {
+                switch (email->state) {
                     case EmailState::Init: {
                         string outMsg("EHLO smtpclient.qw\r\n");
                         MsgBuffer out;
@@ -44,7 +46,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::HandShake;
+                        email->state = EmailState::HandShake;
                         break;
                     }
                     case EmailState::HandShake: {
@@ -57,7 +59,7 @@ void EmailManager::messageHandler(
                             connPtr->send(out);
                         }, false, false);
 
-                        email->_state = EmailState::Auth;
+                        email->state = EmailState::Auth;
                         break;
                     }
                     default:
@@ -65,7 +67,7 @@ void EmailManager::messageHandler(
                 }
                 break;
             case 235:
-                switch (email->_state) {
+                switch (email->state) {
                     case EmailState::Mail: {
                         string outMsg("MAIL FROM:<" + email->_senderEmail + ">\r\n");
                         MsgBuffer out;
@@ -73,7 +75,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Recipient;
+                        email->state = EmailState::Recipient;
                         break;
                     }
                     default:
@@ -81,7 +83,7 @@ void EmailManager::messageHandler(
                 }
                 break;
             case 250:
-                switch (email->_state) {
+                switch (email->state) {
                     case EmailState::HandShake: {
                         string outMsg("STARTTLS\r\n");
                         MsgBuffer out;
@@ -89,7 +91,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::HandShake;
+                        email->state = EmailState::HandShake;
                         break;
                     }
                     case EmailState::Auth: {
@@ -99,7 +101,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::User;
+                        email->state = EmailState::User;
                         break;
                     }
                     case EmailState::Recipient: {
@@ -109,7 +111,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Data;
+                        email->state = EmailState::Data;
                         break;
                     }
                     case EmailState::Data: {
@@ -119,7 +121,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Body;
+                        email->state = EmailState::Body;
                         break;
                     }
                     case EmailState::Quit: {
@@ -128,8 +130,7 @@ void EmailManager::messageHandler(
                         out.append(outMsg.data(), outMsg.size());
 
                         connPtr->send(std::move(out));
-
-                        email->_state = EmailState::Close;
+                        email->state = EmailState::Close;
                         break;
                     }
                     default:
@@ -137,7 +138,7 @@ void EmailManager::messageHandler(
                 }
                 break;
             case 334:
-                switch (email->_state) {
+                switch (email->state) {
                     case EmailState::User: {
                         string outMsg(drogon::utils::base64Encode(
                                 reinterpret_cast<const unsigned char *>(email->_account.c_str()),
@@ -148,7 +149,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Pass;
+                        email->state = EmailState::Pass;
                         break;
                     }
                     case EmailState::Pass: {
@@ -161,7 +162,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Mail;
+                        email->state = EmailState::Mail;
                         break;
                     }
                     default:
@@ -169,13 +170,13 @@ void EmailManager::messageHandler(
                 }
                 break;
             case 354:
-                switch (email->_state) {
+                switch (email->state) {
                     case EmailState::Body: {
                         string outMsg(
                                 "To: " + email->_receiverEmail + "\r\n" +
                                 "From: " + email->_senderEmail + "\r\n"
                         );
-                        if (email->_isHTML) {
+                        if (email->isHTML) {
                             outMsg.append("Content-Type: text/html;\r\n");
                         }
                         outMsg.append(
@@ -187,7 +188,7 @@ void EmailManager::messageHandler(
 
                         connPtr->send(std::move(out));
 
-                        email->_state = EmailState::Quit;
+                        email->state = EmailState::Quit;
                         break;
                     }
                     default:
@@ -198,7 +199,7 @@ void EmailManager::messageHandler(
                 throw EmailException("Unsupported state");
         }
     } catch (const EmailException &e) {
-        email->_state = EmailState::Close;
+        email->state = EmailState::Close;
         callback(false, receivedMsg);
     }
 }
@@ -220,7 +221,7 @@ EmailManager::Email::Email(
     _receiverEmail(std::move(receiverEmail)),
     _subject(std::move(subject)),
     _content(std::move(content)),
-    _isHTML(isHTML),
+    isHTML(isHTML),
     _socket(std::move(socket)) {}
 
 void EmailManager::initAndStart(const Json::Value &config) {

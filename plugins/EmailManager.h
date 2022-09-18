@@ -33,8 +33,8 @@ namespace techmino::plugins {
                     _receiverEmail,
                     _subject,
                     _content;
-            std::atomic<bool> _isHTML{false};
-            std::atomic<EmailState> _state{EmailState::Init};
+            std::atomic<bool> isHTML{false};
+            std::atomic<EmailState> state{EmailState::Init};
             std::shared_ptr<trantor::TcpClient> _socket;
 
             Email(

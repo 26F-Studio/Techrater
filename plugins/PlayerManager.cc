@@ -105,7 +105,10 @@ RedisToken PlayerManager::refresh(const string &refreshToken) {
     }
 }
 
-void PlayerManager::verifyEmail(const string &email) {
+void PlayerManager::verifyEmail(
+        const string &email,
+        const function<void(const HttpResponsePtr &)> &callback
+) {
     auto code = data::randomString(8);
     _playerRedis->setEmailCode(email, code);
     auto mailContent = io::getFileContent("./verifyEmail.html");
@@ -114,13 +117,24 @@ void PlayerManager::verifyEmail(const string &email) {
             "{{VERIFY_CODE}}",
             code
     );
-    // TODO: Replace with async method
+    // TODO: Replace with future
     app().getPlugin<EmailManager>()->smtp(
             email,
             "[techrater] Verify Code 验证码",
             mailContent,
             true,
-            {}
+            [callback, this](bool result, const string &receivedMessage) {
+                ResponseJson response;
+                if (result) {
+                    response.httpCallback(callback);
+                } else {
+                    response.setStatusCode(k500InternalServerError);
+                    response.setResultCode(ResultCode::EmailError);
+                    response.setMessage(i18n("emailSendError"));
+                    response.setReason(receivedMessage);
+                    response.httpCallback(callback);
+                }
+            }
     );
 }
 

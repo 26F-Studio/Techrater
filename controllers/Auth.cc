@@ -39,11 +39,12 @@ void Auth::verifyEmail(const HttpRequestPtr &req, function<void(const HttpRespon
     ResponseJson response;
     handleExceptions([&]() {
         _playerManager->verifyEmail(
-                req->attributes()->get<RequestJson>("requestJson")["email"].asString()
+                req->attributes()->get<RequestJson>("requestJson")["email"].asString(),
+                callback
         );
     }, response);
-    response.httpCallback(callback);
 }
+
 void Auth::seedEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
@@ -53,6 +54,7 @@ void Auth::seedEmail(const HttpRequestPtr &req, function<void(const HttpResponse
     }, response);
     response.httpCallback(callback);
 }
+
 void Auth::loginEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
