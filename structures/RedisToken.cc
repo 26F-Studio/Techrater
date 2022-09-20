@@ -10,15 +10,13 @@ using namespace techmino::structures;
 RedisToken::RedisToken(
         string refresh,
         string access
-) : _refreshToken(move(refresh)),
-    _accessToken(move(access)) {}
+) : _refreshToken(std::move(refresh)),
+    _accessToken(std::move(access)) {}
 
 RedisToken::RedisToken(
         RedisToken &&redisToken
-) noexcept: _refreshToken(move(redisToken._refreshToken)),
-            _accessToken(move(redisToken._accessToken)) {}
-
-string &RedisToken::refresh() { return _refreshToken; }
+) noexcept: _refreshToken(std::move(redisToken._refreshToken)),
+            _accessToken(std::move(redisToken._accessToken)) {}
 
 string &RedisToken::access() { return _accessToken; }
 
