@@ -391,8 +391,6 @@ Json::Value PlayerManager::getPlayerData(
                 orm::CompareOperator::EQ,
                 targetId
         )).toJson();
-        data.removeMember("password_hash");
-        data.removeMember("avatar");
         if (userId > 0) {
             data.removeMember("settings");
             data.removeMember("keymaps");

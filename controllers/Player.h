@@ -42,14 +42,14 @@ namespace techmino::api::v1 {
             );
             METHOD_ADD(
                     Player::getData,
-                    "/info",
+                    "/data",
                     drogon::Get,
                     "techmino::filters::GetAccessToken",
                     "techmino::filters::CheckPlayerId"
             );
             METHOD_ADD(
                     Player::updateData,
-                    "/info",
+                    "/data",
                     drogon::Put,
                     "techmino::filters::CheckAccessToken",
                     "techmino::filters::PlayerUpdateData"

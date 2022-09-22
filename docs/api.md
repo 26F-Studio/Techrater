@@ -24,10 +24,13 @@
 
 ```json
 {
-    // Custom result code
-    "code": 500	// 4xx: Client errors. 5xx: Server errors
-    "Message": "PlayerManager.refresh.invalidRefreshToken" // Error message's I18N path
-    "Reason": "Redis connection lost" // Internal reasons (Maybe empty)
+  // Custom result code
+  "code": 500,
+  // 4xx: Client errors. 5xx: Server errors
+  "Message": "PlayerManager.refresh.invalidRefreshToken",
+  // Error message's I18N path
+  "Reason": "Redis connection lost"
+  // Internal reasons (Maybe empty)
 }
 ```
 
@@ -65,7 +68,7 @@ enum class ResultCode : uint32_t {
 
 #### Description
 
-Check if the access token is valid and return related player ID
+Check if the access token is valid and return related player ID.
 
 #### Request
 
@@ -91,7 +94,7 @@ None
 
 ```json
 {
-    "code": 200
+  "code": 200
 }
 ```
 
@@ -99,7 +102,9 @@ None
 
 #### Description
 
-Check if the refresh token is valid, renew TTL of refresh token, then return a newly generated access token along with the refresh token
+Check if the refresh token is valid, renew TTL of refresh token,
+
+then return a newly generated access token along with the refresh token.
 
 #### Request
 
@@ -125,11 +130,11 @@ None
 
 ```json
 {
-    "code": 200,
-    "data": {
-        "refreshToken": "XXXXXXXXXXXXX",
-        "accessToken": "XXXXXXXXXXXXX"
-    }
+  "code": 200,
+  "data": {
+    "refreshToken": "HEX_STRING",
+    "accessToken": "HEX_STRING"
+  }
 }
 ```
 
@@ -137,7 +142,7 @@ None
 
 #### Description
 
-Send verification code to the specified email. Has frequency limits on `email` and `ip` 
+Send verification code to the specified email. Has frequency limits on `email` and `ip`.
 
 #### Request
 
@@ -153,7 +158,7 @@ None
 
 ```json
 {
-    "email": "xxxxx@xxx.xxx"
+  "email": "EMAIL_ADDRESS"
 }
 ```
 
@@ -167,7 +172,7 @@ None
 
 ```json
 {
-    "code": 200,
+  "code": 200
 }
 ```
 
@@ -175,7 +180,7 @@ None
 
 #### Description
 
-Generate random seed according to the specified email. Should be used to hash player's login password
+Generate random seed according to the specified email. Should be used to hash player's login password.
 
 #### Request
 
@@ -191,7 +196,7 @@ None
 
 ```json
 {
-    "email": "xxxxx@xxx.xxx"
+  "email": "EMAIL_ADDRESS"
 }
 ```
 
@@ -205,8 +210,8 @@ None
 
 ```json
 {
-    "code": 200,
-    "data": "XXXXXXXXXXXXXXXXXX" // Hex string
+  "code": 200,
+  "data": "HEX_STRING"
 }
 ```
 
@@ -214,7 +219,7 @@ None
 
 #### Description
 
-Login with email & password hash or email & verification code
+Login with email & password hash or email & verification code.
 
 #### Request
 
@@ -230,9 +235,10 @@ None
 
 ```json
 {
-    "email": "xxxxx@xxx.xxx",
-    "code": "XXXXXXXX", // Optional. Either specify this or 'password'
-    "password": "XXXXXXXXXXXXXX" // Optional. Either specify this or 'code'
+  "email": "EMAIL_ADDRESS",
+  // Optional. Either specify 'code' or 'password'
+  "code": "RANDOM_STRING_LENGTH_8",
+  "password": "HASHED_STRING"
 }
 ```
 
@@ -246,11 +252,12 @@ None
 
 ```json
 {
-    "code": 200, // 200: Successfully logged in. 201: Successfully created account, need to update info and password
-    "data": {
-        "refreshToken": "XXXXXXXXXXXXX",
-        "accessToken": "XXXXXXXXXXXXX"
-    }
+  "code": 200,
+  // 200: Successfully logged in. 201: Successfully created account, need to update info and password
+  "data": {
+    "refreshToken": "HEX_STRING",
+    "accessToken": "HEX_STRING"
+  }
 }
 ```
 
@@ -258,7 +265,7 @@ None
 
 #### Description
 
-Use email & verification code to reset player's password hash
+Use email & verification code to reset player's password hash.
 
 #### Request
 
@@ -274,9 +281,9 @@ None
 
 ```json
 {
-    "email": "xxxxx@xxx.xxx",
-    "code": "XXXXXXXX",
-    "newPassword": "XXXXXXXXXXXXXX"
+  "email": "EMAIL_ADDRESS",
+  "code": "RANDOM_STRING_LENGTH_8",
+  "newPassword": "HASHED_STRING"
 }
 ```
 
@@ -290,7 +297,7 @@ None
 
 ```json
 {
-    "code": 200
+  "code": 200
 }
 ```
 
@@ -298,7 +305,7 @@ None
 
 #### Description
 
-Validate new email with verification code. Need to be logged in first (Require access token)
+Validate new email with verification code. Need to be logged in first (Require access token).
 
 #### Request
 
@@ -314,8 +321,8 @@ Put
 
 ```json
 {
-    "newEmail": "xxxxx@xxx.xxx",
-    "code": "XXXXXXXX"
+  "newEmail": "EMAIL_ADDRESS",
+  "code": "RANDOM_STRING_LENGTH_8"
 }
 ```
 
@@ -329,7 +336,7 @@ Put
 
 ```json
 {
-    "code": 200
+  "code": 200
 }
 ```
 
@@ -337,9 +344,10 @@ Put
 
 #### Description
 
-Deactivate current account with verification code. Need to be logged in first (Require access token)
+Deactivate current account with verification code. Need to be logged in first (Require access token).
 
-***Warning: This can't be reversed by normal players! If you accidentally deactivated your account, please contact admin.***
+***Warning: This can't be reversed by normal players! If you accidentally deactivated your account, please contact
+admin.***
 
 #### Request
 
@@ -355,7 +363,7 @@ Post
 
 ```json
 {
-    "code": "XXXXXXXX"
+  "code": "RANDOM_STRING_LENGTH_8"
 }
 ```
 
@@ -369,7 +377,191 @@ Post
 
 ```json
 {
-    "code": 200
+  "code": 200
 }
 ```
 
+## API Group: `Player`
+
+### /avatar?id={playerID (Optional)}
+
+#### Description
+
+Get avatar image specified with player ID or access token.
+If `x-access-token` is specified, this would return request sender's avatar.
+Otherwise, this would return the avatar of the player specified by `playerId`
+
+#### Request
+
+##### Method
+
+Get
+
+##### Headers
+
+- x-access-token: (Optional) Access token retrieved by `/login` methods, or generated by `/refresh` method
+
+##### Body
+
+None
+
+#### Response
+
+##### Status Code
+
+200
+
+##### Body
+
+```json
+{
+  "code": 200,
+  "data": "BASE64_STRING"
+}
+```
+
+### /info?id={playerID (Optional in `Get`. Drop in `Put`)}
+
+#### Description
+
+- Get player's info specified with player ID or access token.
+  If `x-access-token` is specified, this would return request sender's *full* info.
+  Otherwise, this would return the *brief* info of the player specified by `playerId`
+- Update player info. Need to be logged in first (Require access token).
+
+#### Request
+
+##### Method
+
+- Get
+- Put
+
+##### Headers
+
+- x-access-token: (Optional in `Get`. Required in `Put`) Access token retrieved by `/login` methods,
+  or generated by `/refresh` method
+
+##### Body
+
+- Get: None
+- Put:
+
+```json
+{
+  "username": "Tester",
+  "motto": "Techrater is awesome",
+  "region": 1,
+  "avatar": "BASE64_STRING",
+  "avatar_frame": 12,
+  "clan": "Miya fan club",
+  "password": "HASHED_STRING"
+}
+```
+
+#### Response
+
+##### Status Code
+
+200
+
+##### Body
+
+```json
+// Get
+{
+  "code": 200,
+  "data": {
+    "id": 1,
+    "username": "user",
+    "motto": "Techmino is fun!",
+    "region": 0,
+    "avatar_hash": "BASE64_STRING",
+    "avatar_frame": 0,
+    "clan": "",
+    "permission": "Normal",
+    // Below is not included if accessing other player's info
+    "email": "user@example.com",
+    "phone": "123-456-7890"
+  }
+}
+
+// Put
+{
+  "code": 200
+}
+```
+
+### /data?id={playerID (Optional in `Get`. Drop in `Put`)}
+
+#### Description
+
+- Get player's data specified with player ID or access token.
+  If `x-access-token` is specified, this would return request sender's *full* data.
+  Otherwise, this would return the *brief* data of the player specified by `playerId`
+- Update player data. Need to be logged in first (Require access token).
+
+#### Request
+
+##### Method
+
+- Get
+- Put
+
+##### Headers
+
+- x-access-token: (Optional in `Get`. Required in `Put`) Access token retrieved by `/login` methods,
+  or generated by `/refresh` method
+
+##### Body
+
+- Get: None
+- Put:
+
+```json
+{
+  "statistics": "ANY_STRING",
+  "ranks": "ANY_STRING",
+  "settings": "ANY_STRING",
+  "keymaps": "ANY_STRING",
+  "touch_1": "ANY_STRING",
+  "touch_2": "ANY_STRING",
+  "touch_3": "ANY_STRING",
+  "extra_1": "ANY_STRING",
+  "extra_2": "ANY_STRING",
+  "extra_3": "ANY_STRING"
+}
+```
+
+#### Response
+
+##### Status Code
+
+200
+
+##### Body
+
+```json
+// Get
+{
+  "code": 200,
+  "data": {
+    "id": 1,
+    "statistics": "ANY_STRING",
+    "ranks": "ANY_STRING",
+    "extra_1": "ANY_STRING",
+    "extra_2": "ANY_STRING",
+    "extra_3": "ANY_STRING",
+    // Below is not included if accessing other player's info
+    "settings": "ANY_STRING",
+    "keymaps": "ANY_STRING",
+    "touch_1": "ANY_STRING",
+    "touch_2": "ANY_STRING",
+    "touch_3": "ANY_STRING"
+  }
+}
+
+// Put
+{
+  "code": 200
+}
+```
