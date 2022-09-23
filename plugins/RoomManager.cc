@@ -50,8 +50,8 @@ RoomPtr RoomManager::getRoom(const std::string &roomId) const {
     try {
         shared_lock<shared_mutex> lock(_sharedMutex);
         return _roomMap.at(roomId);
-    } catch (const out_of_range &) {
-        throw MessageException("roomNotFound");
+    } catch (const out_of_range &e) {
+        throw MessageException("roomNotFound", e);
     }
 }
 

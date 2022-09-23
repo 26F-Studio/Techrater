@@ -30,9 +30,12 @@ namespace techmino::ws::v1 {
             using namespace drogon;
             using namespace techmino::helpers;
             using namespace techmino::structures;
+            using namespace techmino::types;
 
             if (!connectionFilter(wsConnPtr)) {
-                wsConnPtr->shutdown(CloseCode::kViolation, I18nHelper<controllerImpl>::i18n("invalidConnection"));
+                MessageJson(MessageType::Failed)
+                        .setMessage(I18nHelper<controllerImpl>::i18n("invalidConnection"))
+                        .to(wsConnPtr);
                 return;
             }
 
@@ -50,11 +53,11 @@ namespace techmino::ws::v1 {
                     wsConnPtr->forceClose();
                     break;
                 case WebSocketMessageType::Unknown:
-                    LOG_WARN << "Message from " << wsConnPtr->peerAddr().toIpPort()
-                             << " is Unknown";
+                    LOG_WARN << "Message from " << wsConnPtr->peerAddr().toIpPort() << " is Unknown";
                     break;
             }
         }
+
     protected:
         virtual bool connectionFilter(const drogon::WebSocketConnectionPtr &wsConnPtr) {
             return wsConnPtr->connected();
@@ -68,10 +71,9 @@ namespace techmino::ws::v1 {
             using namespace techmino::types;
 
             if (!request["action"].isInt()) {
-                MessageJson message;
-                message.setMessageType(MessageType::Failed);
-                message.setReason(I18nHelper<controllerImpl>::i18n("invalidAction"));
-                message.sendTo(wsConnPtr);
+                MessageJson(MessageType::Failed)
+                        .setMessage(I18nHelper<controllerImpl>::i18n("invalidAction"))
+                        .to(wsConnPtr);
             }
             RequestJson requestJson(request["data"]);
             return _handlerManager->process(

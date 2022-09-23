@@ -12,36 +12,28 @@ namespace techmino::helpers {
     public:
         typedef std::function<void(const drogon::HttpResponsePtr &)> HttpCallback;
 
-        ResponseJson();
+        explicit ResponseJson(
+                drogon::HttpStatusCode statusCode = drogon::k200OK,
+                types::ResultCode resultCode = types::ResultCode::Completed
+        );
 
-        explicit ResponseJson(Json::Value json);
+        ResponseJson &setResultCode(types::ResultCode code);
 
-        explicit ResponseJson(const std::string &raw);
+        ResponseJson &setResultCode(uint32_t code);
 
-        explicit ResponseJson(const drogon::HttpResponsePtr &res);
+        ResponseJson &setStatusCode(drogon::HttpStatusCode code);
 
-        void setResultCode(types::ResultCode code);
+        ResponseJson &setMessage(const std::string &message);
 
-        void setResultCode(uint32_t code);
+        ResponseJson &setData(Json::Value data);
 
-        void setStatusCode(drogon::HttpStatusCode code);
+        ResponseJson &setReason(const std::exception &e);
 
-        void setMessage(const std::string &message);
+        [[maybe_unused]] ResponseJson &setReason(const drogon::orm::DrogonDbException &e);
 
-        void setData(Json::Value data);
+        ResponseJson &setReason(const std::string &reason);
 
-        void setReason(const std::exception &e);
-
-        [[maybe_unused]] void setReason(const drogon::orm::DrogonDbException &e);
-
-        void setReason(const std::string &reason);
-
-        void httpCallback(const HttpCallback &callback) const;
-
-        void httpCallback(
-                const HttpCallback &callback,
-                const std::string &cors
-        ) const;
+        void to(const HttpCallback &callback) const;
 
     private:
         drogon::HttpStatusCode _statusCode = drogon::k200OK;

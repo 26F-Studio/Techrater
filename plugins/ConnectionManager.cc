@@ -26,10 +26,9 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
         unique_lock<shared_mutex> lock(_sharedMutex);
         if (_connectionMap.contains(playerId) &&
             _connectionMap[playerId]->connected()) {
-            MessageJson message;
-            message.setMessageType(MessageType::Error);
-            message.setReason(i18n("connectionReplaced"));
-            message.closeWith(_connectionMap[playerId]);
+            MessageJson(MessageType::Error)
+                    .setMessage(i18n("connectionReplaced"))
+                    .to(_connectionMap[playerId]);
         }
         _connectionMap[playerId] = wsConnPtr;
     }
@@ -56,7 +55,7 @@ void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr) {
                           << ")";
             }
         } catch (const out_of_range &e) {
-            throw MessageException("playerNotFound");
+            throw MessageException(i18n("playerNotFound"), e);
         }
     }
 }
@@ -72,6 +71,6 @@ WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t userId) {
         }
         return wsConnPtr;
     } catch (const out_of_range &e) {
-        throw MessageException("playerNotFound");
+        throw MessageException(i18n("playerNotFound"), e);
     }
 }

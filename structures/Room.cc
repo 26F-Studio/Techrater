@@ -53,9 +53,7 @@ Room::~Room() {
         const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
         wsConnPtr->getContext<Player>()->reset();
 
-        MessageJson(enum_integer(Action::RoomRemove))
-                .setMessageType(MessageType::Server)
-                .sendTo(wsConnPtr);
+        MessageJson(enum_integer(Action::RoomRemove), MessageType::Server).sendTo(wsConnPtr);
     }
 }
 
@@ -160,7 +158,7 @@ Json::Value Room::parse(bool details) const {
     return result;
 }
 
-void Room::publish(MessageJson &message, int64_t excludedId) {
+void Room::publish(const MessageJson &message, int64_t excludedId) {
     shared_lock<shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         if (excludedId != playerId) {
@@ -238,7 +236,7 @@ void Room::endGame(bool force) {
         }
     }
 
-    publish(MessageJson(enum_integer(Action::GameEnd)).setMessageType(MessageType::Server));
+    publish(MessageJson(enum_integer(Action::GameEnd), MessageType::Server));
 }
 
 uint64_t Room::countGamer() const {

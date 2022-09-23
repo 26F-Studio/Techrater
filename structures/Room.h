@@ -70,7 +70,7 @@ namespace techmino::structures {
 
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
-        void publish(helpers::MessageJson &message, int64_t excludedId = -1);
+        void publish(const helpers::MessageJson &message, int64_t excludedId = -1);
 
         Json::Value getData() const;
 

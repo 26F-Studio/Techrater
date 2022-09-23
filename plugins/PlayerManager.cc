@@ -83,9 +83,9 @@ int64_t PlayerManager::getPlayerId(const string &accessToken) {
     try {
         return _playerRedis->getIdByAccessToken(accessToken);
     } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
+                e,
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
@@ -96,9 +96,9 @@ RedisToken PlayerManager::refresh(const string &refreshToken) {
     try {
         return std::move(_playerRedis->refresh(refreshToken));
     } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidRefreshToken"),
+                e,
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
@@ -124,15 +124,13 @@ void PlayerManager::verifyEmail(
             mailContent,
             true,
             [callback, this](bool result, const string &receivedMessage) {
-                ResponseJson response;
                 if (result) {
-                    response.httpCallback(callback);
+                    ResponseJson().to(callback);
                 } else {
-                    response.setStatusCode(k500InternalServerError);
-                    response.setResultCode(ResultCode::EmailError);
-                    response.setMessage(i18n("emailSendError"));
-                    response.setReason(receivedMessage);
-                    response.httpCallback(callback);
+                    ResponseJson(k500InternalServerError, ResultCode::EmailError)
+                            .setMessage(i18n("emailSendError"))
+                            .setReason(receivedMessage)
+                            .to(callback);
                 }
             }
     );
@@ -271,9 +269,9 @@ void PlayerManager::migrateEmail(
         player.setEmail(newEmail);
         _playerMapper.update(player);
     } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
+                e,
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
@@ -291,9 +289,9 @@ void PlayerManager::deactivateEmail(
 
         _playerMapper.deleteOne(player);
     } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found:" << e.what();
         throw ResponseException(
                 i18n("invalidAccessToken"),
+                e,
                 ResultCode::NotAcceptable,
                 k401Unauthorized
         );
@@ -445,9 +443,9 @@ void PlayerManager::_checkEmailCode(const string &email, const string &code) {
         }
         _playerRedis->deleteEmailCode(email);
     } catch (const redis_exception::KeyNotFound &e) {
-        LOG_DEBUG << "Key not found: " << e.what();
         throw ResponseException(
                 i18n("invalidEmail"),
+                e,
                 ResultCode::NotFound,
                 k404NotFound
         );

@@ -23,20 +23,16 @@ void LimitEmail::doFilter(
     auto requestJson = req->attributes()->get<RequestJson>("requestJson");
     try {
         if (!app().getPlugin<PlayerManager>()->emailLimit(requestJson["email"].asString())) {
-            ResponseJson response;
-            response.setStatusCode(k429TooManyRequests);
-            response.setResultCode(ResultCode::TooFrequent);
-            response.setMessage(i18n("tooFrequent"));
-            response.httpCallback(failedCb);
+            ResponseJson(k429TooManyRequests, ResultCode::TooFrequent)
+                    .setMessage(i18n("tooFrequent"))
+                    .to(failedCb);
             return;
         }
     } catch (const exception &e) {
         LOG_ERROR << e.what();
-        ResponseJson response;
-        response.setStatusCode(k500InternalServerError);
-        response.setResultCode(ResultCode::InternalError);
-        response.setMessage(i18n("internalError"));
-        response.httpCallback(failedCb);
+        ResponseJson(k500InternalServerError, ResultCode::InternalError)
+                .setMessage(i18n("internalError"))
+                .to(failedCb);
         return;
     }
     nextCb();

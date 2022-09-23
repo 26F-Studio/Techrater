@@ -22,7 +22,7 @@ void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr 
     handleExceptions([&]() {
         response.setData(req->attributes()->get<int64_t>("playerId"));
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::refresh(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -32,7 +32,7 @@ void Auth::refresh(const HttpRequestPtr &req, function<void(const HttpResponsePt
                 req->attributes()->get<string>("refreshToken")
         ).parse());
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::verifyEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -52,7 +52,7 @@ void Auth::seedEmail(const HttpRequestPtr &req, function<void(const HttpResponse
                 req->attributes()->get<RequestJson>("requestJson")["email"].asString()
         ));
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::loginEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -64,7 +64,9 @@ void Auth::loginEmail(const HttpRequestPtr &req, function<void(const HttpRespons
                     request["email"].asString(),
                     request["code"].asString()
             );
-            if (isNew) { response.setResultCode(ResultCode::Continued); }
+            if (isNew) {
+                response.setResultCode(ResultCode::Continued);
+            }
             response.setData(tokens.parse());
         } else {
             const auto &tokens = _playerManager->loginEmailPassword(
@@ -74,7 +76,7 @@ void Auth::loginEmail(const HttpRequestPtr &req, function<void(const HttpRespons
             response.setData(tokens.parse());
         }
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::resetEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -87,7 +89,7 @@ void Auth::resetEmail(const HttpRequestPtr &req, function<void(const HttpRespons
                 request["newPassword"].asString()
         );
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::migrateEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -100,7 +102,7 @@ void Auth::migrateEmail(const HttpRequestPtr &req, function<void(const HttpRespo
                 request["code"].asString()
         );
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Auth::deactivateEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -112,5 +114,5 @@ void Auth::deactivateEmail(const HttpRequestPtr &req, function<void(const HttpRe
                 request["code"].asString()
         );
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }

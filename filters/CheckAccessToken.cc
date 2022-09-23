@@ -23,11 +23,9 @@ void CheckAccessToken::doFilter(
 ) {
     const auto accessToken = req->getHeader("x-access-token");
     if (accessToken.empty()) {
-        ResponseJson response;
-        response.setStatusCode(k400BadRequest);
-        response.setResultCode(ResultCode::InvalidArguments);
-        response.setMessage(i18n("invalidArguments"));
-        response.httpCallback(failedCb);
+        ResponseJson(k400BadRequest, ResultCode::InvalidArguments)
+                .setMessage(i18n("invalidArguments"))
+                .to(failedCb);
         return;
     }
     try {
@@ -36,10 +34,7 @@ void CheckAccessToken::doFilter(
                 app().getPlugin<PlayerManager>()->getPlayerId(accessToken)
         );
     } catch (const ResponseException &e) {
-        ResponseJson response;
-        response.setStatusCode(e.statusCode());
-        response(e.toJson());
-        response.httpCallback(failedCb);
+        e.toJson().to(failedCb);
         return;
     }
     nextCb();

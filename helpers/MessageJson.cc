@@ -11,13 +11,17 @@ using namespace std;
 using namespace techmino::helpers;
 using namespace techmino::types;
 
-MessageJson::MessageJson() : BasicJson() { setMessageType(MessageType::Client); }
+MessageJson::MessageJson(MessageType messageType) :
+        BasicJson() { setMessageType(messageType); }
 
-MessageJson::MessageJson(Json::Value json) : BasicJson(std::move(json)) {}
+MessageJson::MessageJson(Json::Value json, MessageType messageType) :
+        BasicJson(std::move(json)) { setMessageType(messageType); }
 
-MessageJson::MessageJson(const string &raw) : BasicJson(raw) {}
+MessageJson::MessageJson(const string &raw, MessageType messageType) :
+        BasicJson(raw) { setMessageType(messageType); }
 
-MessageJson::MessageJson(int action) : MessageJson() { setAction(action); }
+MessageJson::MessageJson(int action, MessageType messageType) :
+        MessageJson(messageType) { setAction(action); }
 
 MessageJson &MessageJson::setMessageType(MessageType type) {
     _value["type"] = string(enum_name(type));
@@ -30,42 +34,38 @@ MessageJson &MessageJson::setAction(int action) {
 }
 
 MessageJson &MessageJson::setData(Json::Value data) {
-    _value["data"] = std::move(data);
-    return *this;
-}
-
-MessageJson &MessageJson::setData() {
-    _value.removeMember("data");
-    return *this;
-}
-
-MessageJson &MessageJson::setReason(const exception &e) {
-    setReason(e.what());
-    return *this;
-}
-
-MessageJson &MessageJson::setReason(const drogon::orm::DrogonDbException &e) {
-    setReason(e.base().what());
+    if (!data.empty()) {
+        _value["data"] = std::move(data);
+    } else {
+        _value.removeMember("data");
+    }
     return *this;
 }
 
 MessageJson &MessageJson::setReason(const string &reason) {
-    _value["reason"] = reason;
-    return *this;
-}
-
-MessageJson &MessageJson::sendTo(const WebSocketConnectionPtr &connectionPtr) {
-    if (connectionPtr->connected()) {
-        connectionPtr->send(stringify());
+    if (!reason.empty()) {
+        _value["reason"] = reason;
+    } else {
+        _value.removeMember("reason");
     }
     return *this;
 }
 
-MessageJson &MessageJson::closeWith(const WebSocketConnectionPtr &connectionPtr) {
-    if (connectionPtr->connected()) {
-        connectionPtr->shutdown(CloseCode::kViolation, stringify());
+MessageJson &MessageJson::setMessage(const string &message) {
+    if (!message.empty()) {
+        _value["message"] = message;
+    } else {
+        _value.removeMember("message");
     }
     return *this;
 }
 
-
+void MessageJson::to(const WebSocketConnectionPtr &connectionPtr) const {
+    if (connectionPtr->connected()) {
+        if (enum_cast<MessageType>(_value["type"].asString()).value_or(MessageType::Client) == MessageType::Error) {
+            connectionPtr->shutdown(CloseCode::kViolation, stringify());
+        } else {
+            connectionPtr->send(stringify());
+        }
+    }
+}

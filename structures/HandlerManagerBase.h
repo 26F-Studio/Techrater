@@ -22,10 +22,9 @@ namespace techmino::structures {
 
             const auto &handler = _handlerFactory.getHandler(action);
             if (const auto reason = handler.filter(wsConnPtr, request)) {
-                MessageJson message(action);
-                message.setMessageType(MessageType::Failed);
-                message.setReason(reason.value());
-                message.sendTo(wsConnPtr);
+                MessageJson(action, MessageType::Failed)
+                        .setMessage(reason.value())
+                        .to(wsConnPtr);
             }
             handler.process(wsConnPtr, request);
         }

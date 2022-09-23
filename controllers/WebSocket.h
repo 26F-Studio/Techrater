@@ -11,7 +11,7 @@
 #include <plugins/HandlerManager.h>
 
 namespace techmino::ws::v1 {
-    class Websocket : public BaseWebsocket<Websocket, plugins::HandlerManager> {
+    class WebSocket : public BaseWebsocket<WebSocket, plugins::HandlerManager> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
@@ -20,7 +20,7 @@ namespace techmino::ws::v1 {
             WS_PATH_ADD("/techmino/ws/v1", "techmino::filters::CheckAccessToken");
         WS_PATH_LIST_END
 
-        Websocket();
+        WebSocket();
 
         void handleNewConnection(
                 const drogon::HttpRequestPtr &req,

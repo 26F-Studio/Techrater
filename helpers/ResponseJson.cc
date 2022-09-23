@@ -13,45 +13,29 @@ using namespace techmino::helpers;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-ResponseJson::ResponseJson() : BasicJson() { setResultCode(types::ResultCode::Completed); }
+ResponseJson::ResponseJson(
+        HttpStatusCode statusCode,
+        ResultCode resultCode
+) : BasicJson(), _statusCode(statusCode) { setResultCode(resultCode); }
 
-ResponseJson::ResponseJson(Json::Value json) : BasicJson(std::move(json)) {}
+ResponseJson &ResponseJson::setResultCode(ResultCode code) { setResultCode(enum_integer(code)); }
 
-ResponseJson::ResponseJson(const string &raw) : BasicJson(raw) {}
+ResponseJson &ResponseJson::setResultCode(uint32_t code) { _value["code"] = code; }
 
-ResponseJson::ResponseJson(const HttpResponsePtr &res) {
-    auto object = res->getJsonObject();
-    if (!object) {
-        throw json_exception::InvalidFormat(res->getJsonError());
-    }
-    _value = std::move(*object);
-}
+ResponseJson &ResponseJson::setStatusCode(drogon::HttpStatusCode code) { _statusCode = code; }
 
-void ResponseJson::setResultCode(ResultCode code) { setResultCode(enum_integer(code)); }
+ResponseJson &ResponseJson::setMessage(const string &message) { _value["message"] = message; }
 
-void ResponseJson::setResultCode(uint32_t code) { _value["code"] = code; }
+ResponseJson &ResponseJson::setData(Json::Value data) { _value["data"] = std::move(data); }
 
-void ResponseJson::setStatusCode(drogon::HttpStatusCode code) { _statusCode = code; }
+ResponseJson &ResponseJson::setReason(const exception &e) { setReason(e.what()); }
 
-void ResponseJson::setMessage(const string &message) { _value["message"] = message; }
+[[maybe_unused]] ResponseJson &ResponseJson::setReason(const drogon::orm::DrogonDbException &e) { setReason(e.base().what()); }
 
-void ResponseJson::setData(Json::Value data) { _value["data"] = std::move(data); }
+ResponseJson &ResponseJson::setReason(const string &reason) { _value["reason"] = reason; }
 
-void ResponseJson::setReason(const exception &e) { setReason(e.what()); }
-
-[[maybe_unused]] void ResponseJson::setReason(const drogon::orm::DrogonDbException &e) { setReason(e.base().what()); }
-
-void ResponseJson::setReason(const string &reason) { _value["reason"] = reason; }
-
-void ResponseJson::httpCallback(const function<void(const drogon::HttpResponsePtr &)> &callback) const {
+void ResponseJson::to(const ResponseJson::HttpCallback &callback) const {
     auto httpJsonResponse = HttpResponse::newHttpJsonResponse(_value);
     httpJsonResponse->setStatusCode(_statusCode);
-    callback(httpJsonResponse);
-}
-
-void ResponseJson::httpCallback(const ResponseJson::HttpCallback &callback, const string &cors) const {
-    auto httpJsonResponse = HttpResponse::newHttpJsonResponse(_value);
-    httpJsonResponse->setStatusCode(_statusCode);
-    httpJsonResponse->addHeader("Access-Control-Allow-Origin", cors);
     callback(httpJsonResponse);
 }

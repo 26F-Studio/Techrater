@@ -2,7 +2,7 @@
 // Created by Parti on 2021/3/27.
 //
 
-#include <controllers/Websocket.h>
+#include <controllers/WebSocket.h>
 #include <magic_enum.hpp>
 #include <structures/Player.h>
 
@@ -14,9 +14,9 @@ using namespace techmino::plugins;
 using namespace techmino::structures;
 using namespace techmino::ws::v1;
 
-Websocket::Websocket() : _connectionManager(app().getPlugin<ConnectionManager>()) {}
+WebSocket::WebSocket() : _connectionManager(app().getPlugin<ConnectionManager>()) {}
 
-void Websocket::handleNewConnection(
+void WebSocket::handleNewConnection(
         const HttpRequestPtr &req,
         const WebSocketConnectionPtr &wsConnPtr
 ) {
@@ -26,10 +26,10 @@ void Websocket::handleNewConnection(
     _connectionManager->subscribe(wsConnPtr);
 }
 
-void Websocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
-    _connectionManager->unsubscribe(wsConnPtr);
+void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
+    NO_EXCEPTION(_connectionManager->unsubscribe(wsConnPtr);)
 }
 
-bool Websocket::connectionFilter(const WebSocketConnectionPtr &wsConnPtr) {
+bool WebSocket::connectionFilter(const WebSocketConnectionPtr &wsConnPtr) {
     return wsConnPtr->connected() && wsConnPtr->getContext<Player>();
 }

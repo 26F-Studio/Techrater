@@ -23,7 +23,7 @@ void Player::getAvatar(const HttpRequestPtr &req, function<void(const HttpRespon
                 req->attributes()->get<int64_t>("playerId")
         ));
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Player::getInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -34,7 +34,7 @@ void Player::getInfo(const HttpRequestPtr &req, function<void(const HttpResponse
                 req->attributes()->get<int64_t>("playerId")
         ));
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Player::updateInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -45,7 +45,7 @@ void Player::updateInfo(const HttpRequestPtr &req, function<void(const HttpRespo
                 req->attributes()->get<RequestJson>("requestJson")
         );
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Player::getData(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -56,7 +56,7 @@ void Player::getData(const HttpRequestPtr &req, function<void(const HttpResponse
                 req->attributes()->get<int64_t>("playerId")
         ));
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }
 
 void Player::updateData(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
@@ -67,5 +67,5 @@ void Player::updateData(const HttpRequestPtr &req, function<void(const HttpRespo
                 req->attributes()->get<RequestJson>("requestJson")
         );
     }, response);
-    response.httpCallback(callback);
+    response.to(callback);
 }

@@ -11,33 +11,24 @@
 namespace techmino::helpers {
     class MessageJson : public BasicJson {
     public:
-        MessageJson();
+        explicit MessageJson(types::MessageType messageType = types::MessageType::Client);
 
-        explicit MessageJson(Json::Value json);
+        explicit MessageJson(Json::Value json, types::MessageType messageType = types::MessageType::Client);
 
-        explicit MessageJson(const std::string &raw);
+        explicit MessageJson(const std::string &raw, types::MessageType messageType = types::MessageType::Client);
 
-        explicit MessageJson(int action);
+        explicit MessageJson(int action, types::MessageType messageType = types::MessageType::Client);
 
-        MessageJson &setMessageType(types::MessageType type = types::MessageType::Client);
+        MessageJson &setMessageType(types::MessageType type);
 
         MessageJson &setAction(int action);
 
-        MessageJson &setData(Json::Value data);
+        MessageJson &setData(Json::Value data = {});
 
-        [[maybe_unused]] MessageJson &setData();
-
-        MessageJson &setReason(const std::exception &e);
-
-        [[maybe_unused]] MessageJson &setReason(const drogon::orm::DrogonDbException &e);
+        MessageJson &setMessage(const std::string &message);
 
         MessageJson &setReason(const std::string &reason);
 
-        MessageJson &sendTo(const drogon::WebSocketConnectionPtr &connectionPtr);
-
-        MessageJson &closeWith(const drogon::WebSocketConnectionPtr &connectionPtr);
+        void to(const drogon::WebSocketConnectionPtr &connectionPtr) const;
     };
 }
-
-
-

@@ -60,8 +60,7 @@ void RoomInfoUpdate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJso
         } else {
             room = wsConnPtr->getContext<Player>()->getRoom();
         }
-        room->publish(MessageJson(_action)
-                              .setMessageType(MessageType::Server)
+        room->publish(MessageJson(_action, MessageType::Server)
                               .setData(room->updateInfo(request["data"])));
     }, _action, wsConnPtr);
 }

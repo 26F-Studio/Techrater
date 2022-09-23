@@ -14,94 +14,64 @@ using namespace techmino::internal;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-BaseException::BaseException(string message) : _message(move(message)) {}
+BaseException::BaseException(string message) : _message(std::move(message)) {}
 
 char const *BaseException::what() const noexcept { return _message.c_str(); }
 
-CodeException::CodeException(string message, int code) :
-        BaseException(move(message)), _code(code) {}
-
-int CodeException::code() const noexcept { return _code; }
-
-NetworkException::NetworkException(
-        string message,
-        ReqResult result
-) : CodeException(move(message), enum_integer(TypePrefix::Request) + enum_integer(result)) {}
-
 ResponseException::ResponseException(
         string message,
-        ResultCode code,
+        ResultCode resultCode,
         HttpStatusCode statusCode
-) : BaseException(move(message)), _code(code), _statusCode(statusCode) {}
+) : BaseException(std::move(message)), _resultCode(resultCode), _statusCode(statusCode) {}
 
 ResponseException::ResponseException(
         string message,
         const exception &e,
-        ResultCode code,
+        ResultCode resultCode,
         HttpStatusCode statusCode
-) : BaseException(move(message)), _code(code), _statusCode(statusCode), _reason(e.what()) {}
+) : BaseException(std::move(message)), _reason(e.what()), _resultCode(resultCode), _statusCode(statusCode) {}
 
-ResultCode ResponseException::code() const noexcept { return _code; }
-
-HttpStatusCode ResponseException::statusCode() const noexcept { return _statusCode; }
-
-Json::Value ResponseException::toJson() const noexcept {
+ResponseJson ResponseException::toJson() const noexcept {
     ResponseJson result;
-    result.setResultCode(_code);
+    result.setResultCode(_statusCode);
+    result.setResultCode(_resultCode);
     result.setMessage(_message);
-    if (!_reason.empty()) {
-        result.setReason(_reason);
-    }
-    return result.ref();
+    result.setReason(_reason);
+    return result;
 }
 
 MessageException::MessageException(
         string message,
         bool error
-) : BaseException(move(message)), error(error) {}
+) : BaseException(std::move(message)), _error(error) {}
+
+MessageException::MessageException(
+        std::string message,
+        const exception &e,
+        bool error
+) : BaseException(std::move(message)), _reason(e.what()), _error(error) {}
+
+MessageJson MessageException::toJson() const noexcept {
+    return MessageJson(_error ? MessageType::Error : MessageType::Failed)
+            .setMessage(_message)
+            .setReason(_reason);
+}
 
 EmailException::EmailException(
         string message
-) : BaseException(move(message)) {}
+) : BaseException(std::move(message)) {}
 
 json_exception::InvalidFormat::InvalidFormat(std::string message) :
-        BaseException(move(message)) {}
+        BaseException(std::move(message)) {}
 
 json_exception::WrongType::WrongType(JsonValue valueType) :
         BaseException(string(enum_name(valueType))) {}
 
-sql_exception::EmptyValue::EmptyValue(string message) :
-        BaseException(move(message)) {}
-
-sql_exception::NotEqual::NotEqual(string message) :
-        BaseException(move(message)) {}
-
 redis_exception::KeyNotFound::KeyNotFound(string message) :
-        BaseException(move(message)) {}
+        BaseException(std::move(message)) {}
 
-redis_exception::FieldNotFound::FieldNotFound(string message) :
-        BaseException(move(message)) {}
-
-room_exception::PlayerOverFlow::PlayerOverFlow(string message) :
-        BaseException(move(message)) {}
-
-room_exception::PlayerNotFound::PlayerNotFound(string message) :
-        BaseException(move(message)) {}
-
-room_exception::RoomOverFlow::RoomOverFlow(string message) :
-        BaseException(move(message)) {}
-
-room_exception::RoomNotFound::RoomNotFound(string message) :
-        BaseException(move(message)) {}
-
-room_exception::InvalidPassword::InvalidPassword(string message) :
-        BaseException(move(message)) {}
+[[maybe_unused]] redis_exception::FieldNotFound::FieldNotFound(string message) :
+        BaseException(std::move(message)) {}
 
 action_exception::ActionNotFound::ActionNotFound(string message) :
-        BaseException(move(message)) {}
-
-action_exception::Unauthorized::Unauthorized(string message) :
-        BaseException(move(message)) {}
-
-action_exception::InvalidArgument::InvalidArgument(string message) :
-        BaseException(move(message)) {}
+        BaseException(std::move(message)) {}
