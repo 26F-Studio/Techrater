@@ -32,12 +32,9 @@ ResponseException::ResponseException(
 ) : BaseException(std::move(message)), _reason(e.what()), _resultCode(resultCode), _statusCode(statusCode) {}
 
 ResponseJson ResponseException::toJson() const noexcept {
-    ResponseJson result;
-    result.setResultCode(_statusCode);
-    result.setResultCode(_resultCode);
-    result.setMessage(_message);
-    result.setReason(_reason);
-    return result;
+    return ResponseJson(_statusCode, _resultCode)
+            .setMessage(_message)
+            .setReason(_reason);
 }
 
 MessageException::MessageException(

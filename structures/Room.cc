@@ -52,8 +52,7 @@ Room::~Room() {
     for (const auto playerId: _playerSet) {
         const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
         wsConnPtr->getContext<Player>()->reset();
-
-        MessageJson(enum_integer(Action::RoomRemove), MessageType::Server).sendTo(wsConnPtr);
+        MessageJson(enum_integer(Action::RoomRemove), MessageType::Server).to(wsConnPtr);
     }
 }
 
@@ -162,7 +161,7 @@ void Room::publish(const MessageJson &message, int64_t excludedId) {
     shared_lock<shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         if (excludedId != playerId) {
-            message.sendTo(_connectionManager->getConnPtr(playerId));
+            message.to(_connectionManager->getConnPtr(playerId));
         }
     }
 }

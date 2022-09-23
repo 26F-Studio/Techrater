@@ -35,7 +35,7 @@ void RoomList::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
 
         MessageJson(_action).setData(
                 app().getPlugin<RoomManager>()->listRoom(pageIndex, pageSize)
-        ).sendTo(wsConnPtr);
+        ).to(wsConnPtr);
 
     }, _action, wsConnPtr);
 }

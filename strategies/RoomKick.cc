@@ -72,7 +72,7 @@ void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
         room->publish(message, target->playerId);
 
         target->reset();
-        message.setMessageType(MessageType::Server).sendTo(targetConnPtr);
+        message.setMessageType(MessageType::Server).to(targetConnPtr);
 
         if (room->empty()) {
             roomManager->removeRoom(room->roomId);

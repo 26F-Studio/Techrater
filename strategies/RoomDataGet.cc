@@ -40,6 +40,6 @@ void RoomDataGet::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &
         } else {
             room = wsConnPtr->getContext<Player>()->getRoom();
         }
-        MessageJson(_action).setData(room->getData()).sendTo(wsConnPtr);
+        MessageJson(_action).setData(room->getData()).to(wsConnPtr);
     }, _action, wsConnPtr);
 }

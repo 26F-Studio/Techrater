@@ -6,6 +6,8 @@
 
 #include <drogon/drogon.h>
 #include <helpers/MessageJson.h>
+#include <helpers/RequestJson.h>
+#include <helpers/ResponseJson.h>
 #include <types/JsonValue.h>
 #include <types/MessageType.h>
 #include <types/ResultCode.h>

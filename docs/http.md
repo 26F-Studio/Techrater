@@ -28,7 +28,7 @@
   "code": 500,
   // Error message's I18N path
   "Message": "PlayerManager.refresh.invalidRefreshToken",
-  // Internal reasons (Maybe empty)
+  // Internal reasons (Optional)
   "Reason": "Redis connection lost"
 }
 ```

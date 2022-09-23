@@ -6,8 +6,8 @@
 
 #include <helpers/BasicJson.h>
 #include <structures/Exceptions.h>
+#include <types/JsonValue.h>
 #include <utils/data.h>
-#include <variant>
 
 namespace techmino::helpers {
     class RequestJson : public BasicJson {

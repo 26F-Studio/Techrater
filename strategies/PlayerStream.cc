@@ -18,7 +18,7 @@ using namespace techmino::strategies;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-PlayerStream::PlayerStream() : MessageHandlerBase(enum_integer(Action::PlayerFinish)) {}
+PlayerStream::PlayerStream() : MessageHandlerBase(enum_integer(Action::PlayerStream)) {}
 
 optional<string> PlayerStream::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();

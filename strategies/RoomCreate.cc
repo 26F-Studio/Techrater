@@ -51,7 +51,7 @@ void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         player->setRoom(room);
         player->role = Player::Role::Admin;
         player->type = Player::Type::Gamer;
-        MessageJson(_action).setData(room->roomId).sendTo(wsConnPtr);
+        MessageJson(_action).setData(room->roomId).to(wsConnPtr);
 
         app().getPlugin<RoomManager>()->setRoom(std::move(room));
     }, _action, wsConnPtr);

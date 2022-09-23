@@ -23,15 +23,13 @@ namespace techmino::helpers {
 
         ResponseJson &setStatusCode(drogon::HttpStatusCode code);
 
-        ResponseJson &setMessage(const std::string &message);
-
         ResponseJson &setData(Json::Value data);
 
-        ResponseJson &setReason(const std::exception &e);
-
-        [[maybe_unused]] ResponseJson &setReason(const drogon::orm::DrogonDbException &e);
+        ResponseJson &setMessage(const std::string &message);
 
         ResponseJson &setReason(const std::string &reason);
+
+        ResponseJson &setReason(const std::exception &e);
 
         void to(const HttpCallback &callback) const;
 
