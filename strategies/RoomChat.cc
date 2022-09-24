@@ -19,7 +19,7 @@ using namespace techmino::strategies;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-RoomChat::RoomChat() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
+RoomChat::RoomChat() : MessageHandlerBase(enum_integer(Action::RoomChat)) {}
 
 optional<string> RoomChat::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
@@ -45,8 +45,6 @@ optional<string> RoomChat::filter(const WebSocketConnectionPtr &wsConnPtr, Reque
         return i18n("invalidArguments");
     }
 
-    request.trim("password", JsonValue::String);
-
     return nullopt;
 }
 
@@ -61,7 +59,7 @@ void RoomChat::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
         }
         Json::Value data;
         data["playerId"] = player->playerId;
-        data["config"] = request["message"].asString();
+        data["message"] = request["message"].asString();
 
         room->publish(MessageJson(_action).setData(data));
         room->appendChat(std::move(data));

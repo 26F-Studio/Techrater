@@ -54,14 +54,18 @@ optional<string> RoomDataUpdate::filter(const WebSocketConnectionPtr &wsConnPtr,
 }
 
 void RoomDataUpdate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
         RoomPtr room;
         if (request.check("roomId", JsonValue::String)) {
             room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
         } else {
-            room = wsConnPtr->getContext<Player>()->getRoom();
+            room = player->getRoom();
         }
-        room->publish(MessageJson(_action, MessageType::Server)
-                              .setData(room->updateData(request["data"])));
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        data["data"] = room->updateData(request["data"]);
+
+        room->publish(MessageJson(_action).setData(std::move(data)));
     }, _action, wsConnPtr);
 }
