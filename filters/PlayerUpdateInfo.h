@@ -15,7 +15,6 @@
  * @param avatar: String
  * @param avatar_frame: Int64
  * @param clan: Int64
- * @param password: String
  * @return requestJson: in request attributes
  */
 namespace techmino::filters {

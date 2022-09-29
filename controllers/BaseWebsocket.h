@@ -33,7 +33,7 @@ namespace techmino::ws::v1 {
             using namespace techmino::types;
 
             if (!connectionFilter(wsConnPtr)) {
-                MessageJson(MessageType::Failed)
+                MessageJson(MessageType::Error)
                         .setMessage(I18nHelper<controllerImpl>::i18n("invalidConnection"))
                         .to(wsConnPtr);
                 return;

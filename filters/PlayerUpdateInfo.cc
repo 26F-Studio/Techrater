@@ -30,7 +30,6 @@ void PlayerUpdateInfo::doFilter(
         request.trim("avatar", JsonValue::String);
         request.trim("avatar_frame", JsonValue::Int64);
         request.trim("clan", JsonValue::Int64);
-        request.trim("password", JsonValue::String);
         req->attributes()->insert("requestJson", request);
         nextCb();
     }, failedCb);

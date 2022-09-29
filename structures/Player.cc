@@ -12,12 +12,12 @@ using namespace std;
 using namespace techmino::structures;
 
 Player::Player(
-        int64_t userId,
+        int64_t playerId,
         Role role,
         State state,
         Type type
-) : PlayerBase(userId),
-    playerInfo(orm::Mapper<techrater::Player>(app().getDbClient()).findByPrimaryKey(userId)),
+) : PlayerBase(playerId),
+    playerInfo(orm::Mapper<techrater::Player>(app().getDbClient()).findByPrimaryKey(playerId)),
     role(role),
     state(state),
     type(type) {}

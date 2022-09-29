@@ -42,7 +42,7 @@ namespace techmino::structures {
         };
     public:
         explicit Player(
-                int64_t userId,
+                int64_t playerId,
                 Role role = Role::Normal,
                 State state = State::Standby,
                 Type type = Type::Spectator

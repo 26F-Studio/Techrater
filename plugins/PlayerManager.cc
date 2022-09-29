@@ -169,12 +169,18 @@ tuple<RedisToken, bool> PlayerManager::loginEmailCode(const string &email, const
         techrater::Data data;
         data.setId(player.getValueOfId());
         _dataMapper.insert(data);
+
+        _playerRedis->setEmailCode(email, code);
     } else {
         player = _playerMapper.findOne(orm::Criteria(
                 techrater::Player::Cols::_email,
                 orm::CompareOperator::EQ,
                 email
         ));
+
+        if (player.getPasswordHash() == nullptr) {
+            _playerRedis->setEmailCode(email, code);
+        }
     }
 
     return {
@@ -357,16 +363,11 @@ void PlayerManager::updatePlayerInfo(
 ) {
     auto player = _playerMapper.findByPrimaryKey(userId);
     if (player.getPasswordHash() == nullptr) {
-        if (!request.check("password", JsonValue::String)) {
-            throw ResponseException(
-                    i18n("noPassword"),
-                    ResultCode::NullValue,
-                    k403Forbidden
-            );
-        }
-        player.setPasswordHash(crypto::blake2B(
-                request["password"].asString() + crypto::blake2B(to_string(player.getValueOfId()))
-        ));
+        throw ResponseException(
+                i18n("noPassword"),
+                ResultCode::NullValue,
+                k403Forbidden
+        );
     }
     if (request.check("avatar", JsonValue::String)) {
         player.setAvatarHash(crypto::blake2B(request["avatar"].asString()));

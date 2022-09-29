@@ -18,7 +18,7 @@ RequestJson::RequestJson(Json::Value json) : BasicJson(std::move(json)) {}
 
 RequestJson::RequestJson(const string &raw) : BasicJson(raw) {}
 
-RequestJson::RequestJson(const drogon::HttpRequestPtr &req) {
+RequestJson::RequestJson(const HttpRequestPtr &req) {
     auto object = req->getJsonObject();
     if (!object) {
         throw json_exception::InvalidFormat(req->getJsonError());

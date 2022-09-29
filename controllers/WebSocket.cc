@@ -20,14 +20,29 @@ void WebSocket::handleNewConnection(
         const HttpRequestPtr &req,
         const WebSocketConnectionPtr &wsConnPtr
 ) {
-    auto id = req->getAttributes()->get<int64_t>("id");
-    wsConnPtr->setContext(make_shared<Player>(id));
-    wsConnPtr->setPingMessage("", chrono::seconds(5));
-    _connectionManager->subscribe(wsConnPtr);
+    try {
+        const auto playerId = req->getAttributes()->get<int64_t>("playerId");
+        wsConnPtr->setContext(make_shared<Player>(playerId));
+        wsConnPtr->setPingMessage("", chrono::seconds(5));
+        _connectionManager->subscribe(wsConnPtr);
+    } catch (const orm::DrogonDbException &e) {
+        LOG_ERROR << e.base().what();
+        MessageJson()
+                .setMessage(i18n("playerNotFound"))
+                .setReason(e.base().what())
+                .to(wsConnPtr);
+    } catch (const exception &e) {
+        LOG_ERROR << e.what();
+        MessageJson()
+                .setMessage(i18n("connectionFailed"))
+                .setReason(e.what())
+                .to(wsConnPtr);
+    }
 }
 
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
     NO_EXCEPTION(_connectionManager->unsubscribe(wsConnPtr);)
+    wsConnPtr->forceClose();
 }
 
 bool WebSocket::connectionFilter(const WebSocketConnectionPtr &wsConnPtr) {

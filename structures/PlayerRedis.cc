@@ -2,6 +2,7 @@
 // Created by particleg on 2021/9/29.
 //
 
+#include <structures/ExceptionHandlers.h>
 #include <structures/PlayerRedis.h>
 #include <utils/crypto.h>
 
@@ -13,19 +14,18 @@ using namespace techmino::utils;
 
 // TODO: Make some Redis actions run in pipeline
 
-PlayerRedis::PlayerRedis(Expiration expiration) : RedisHelper("user"), _expiration(expiration) {}
+PlayerRedis::PlayerRedis(Expiration expiration) : RedisHelper("player"), _expiration(expiration) {}
 
-PlayerRedis::PlayerRedis(PlayerRedis &&redis) noexcept: RedisHelper("user"), _expiration(redis._expiration) {}
+PlayerRedis::PlayerRedis(PlayerRedis &&redis) noexcept: RedisHelper("player"), _expiration(redis._expiration) {}
 
 RedisToken PlayerRedis::refresh(const string &refreshToken) {
-    expire("auth:refresh:" + refreshToken, _expiration.refresh);
-    return {
-            refreshToken,
-            _generateAccessToken(get("auth:refresh:" + refreshToken))
-    };
+    const auto userId = get("auth:refresh-id:" + refreshToken);
+    del("auth:refresh-id:" + refreshToken);
+    return generateTokens(userId);
 }
 
 RedisToken PlayerRedis::generateTokens(const string &userId) {
+    NO_EXCEPTION(del("auth:refresh-id:" + get("auth:id-refresh:" + userId));)
     return {
             _generateRefreshToken(userId),
             _generateAccessToken(userId)
@@ -49,31 +49,31 @@ void PlayerRedis::setEmailCode(const string &email, const string &code) {
 }
 
 int64_t PlayerRedis::getIdByAccessToken(const string &accessToken) {
-    return stoll(get("auth:access:" + accessToken));
+    return stoll(get("auth:access-id:" + accessToken));
 }
 
 string PlayerRedis::_generateRefreshToken(const string &userId) {
     auto refreshToken = crypto::keccak(drogon::utils::getUuid());
-    setEx(
-            "auth:refresh:" + refreshToken,
-            _expiration.getRefreshSeconds(),
-            userId
-    );
+    setEx({{
+                   "auth:id-refresh:" + userId,
+                   _expiration.getRefreshSeconds(),
+                   refreshToken
+           },
+           {
+                   "auth:refresh-id:" + refreshToken,
+                   _expiration.getRefreshSeconds(),
+                   userId
+           }});
     return refreshToken;
 }
 
 string PlayerRedis::_generateAccessToken(const string &userId) {
     auto accessToken = crypto::blake2B(drogon::utils::getUuid());
-    setEx({{
-                   "auth:id:" + userId,
-                   _expiration.getAccessSeconds(),
-                   accessToken
-           },
-           {
-                   "auth:access:" + accessToken,
-                   _expiration.getAccessSeconds(),
-                   userId
-           }});
+    setEx(
+            "auth:access-id:" + accessToken,
+            _expiration.getAccessSeconds(),
+            userId
+    );
     return accessToken;
 }
 
