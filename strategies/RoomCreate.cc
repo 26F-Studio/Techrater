@@ -26,12 +26,14 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
     if (room) {
         room->unsubscribe(player->playerId);
 
+        player->reset();
+
+        auto message = MessageJson(enum_integer(Action::RoomLeave));
+        message.to(wsConnPtr);
+
         Json::Value data;
         data["playerId"] = player->playerId;
-        room->publish(MessageJson(_action).setData(std::move(data)), player->playerId);
-
-        player->reset();
-        MessageJson(_action).to(wsConnPtr);
+        room->publish(message.setData(std::move(data)), player->playerId);
     }
 
     if (!request.check("capacity", JsonValue::UInt64) ||
