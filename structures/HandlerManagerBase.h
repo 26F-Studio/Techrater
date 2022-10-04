@@ -25,6 +25,7 @@ namespace techmino::structures {
                 MessageJson(action, MessageType::Failed)
                         .setMessage(reason.value())
                         .to(wsConnPtr);
+                return;
             }
             handler.process(wsConnPtr, request);
         }

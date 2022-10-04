@@ -3,6 +3,7 @@
 //
 
 #include <magic_enum.hpp>
+#include <plugins/RoomManager.h>
 #include <structures/Player.h>
 #include <structures/Room.h>
 #include <types/Action.h>
@@ -56,7 +57,14 @@ Room::~Room() {
     }
 }
 
-bool Room::empty() const { return countGamer() == 0; }
+bool Room::empty(bool all) const {
+    if (all) {
+        shared_lock<shared_mutex> lock(_playerMutex);
+        return _playerSet.empty();
+    } else {
+        return countGamer() == 0;
+    }
+}
 
 bool Room::full() const { return countGamer() >= capacity; }
 
@@ -76,8 +84,15 @@ void Room::subscribe(int64_t playerId) {
 }
 
 void Room::unsubscribe(int64_t playerId) {
-    unique_lock<shared_mutex> lock(_playerMutex);
-    _playerSet.erase(playerId);
+    {
+        unique_lock<shared_mutex> lock(_playerMutex);
+        _playerSet.erase(playerId);
+    }
+    if (empty(true)) {
+        app().getPlugin<RoomManager>()->removeRoom(roomId);
+    } else if (empty()) {
+        endGame();
+    }
 }
 
 uint64_t Room::countPlaying() const {

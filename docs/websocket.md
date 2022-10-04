@@ -1,4 +1,4 @@
-p# Techrater WebSocket API
+# Techrater WebSocket API
 
 ## Hosts
 
@@ -477,7 +477,7 @@ All ***users*** in the room
 }
 ```
 
-### 1206 Player Type
+### 1207 Player Type
 
 #### Description
 

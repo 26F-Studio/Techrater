@@ -50,7 +50,7 @@ namespace techmino::structures {
 
         ~Room() override;
 
-        bool empty() const;
+        bool empty(bool all = false) const;
 
         bool full() const;
 

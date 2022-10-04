@@ -12,6 +12,7 @@ using namespace std;
 using namespace techmino::helpers;
 using namespace techmino::plugins;
 using namespace techmino::structures;
+using namespace techmino::types;
 using namespace techmino::ws::v1;
 
 WebSocket::WebSocket() : _connectionManager(app().getPlugin<ConnectionManager>()) {}
@@ -27,13 +28,13 @@ void WebSocket::handleNewConnection(
         _connectionManager->subscribe(wsConnPtr);
     } catch (const orm::DrogonDbException &e) {
         LOG_ERROR << e.base().what();
-        MessageJson()
+        MessageJson(MessageType::Error)
                 .setMessage(i18n("playerNotFound"))
                 .setReason(e.base().what())
                 .to(wsConnPtr);
     } catch (const exception &e) {
         LOG_ERROR << e.what();
-        MessageJson()
+        MessageJson(MessageType::Error)
                 .setMessage(i18n("connectionFailed"))
                 .setReason(e.what())
                 .to(wsConnPtr);
@@ -41,7 +42,7 @@ void WebSocket::handleNewConnection(
 }
 
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
-    NO_EXCEPTION(_connectionManager->unsubscribe(wsConnPtr);)
+//    NO_EXCEPTION(_connectionManager->unsubscribe(wsConnPtr);)
     wsConnPtr->forceClose();
 }
 

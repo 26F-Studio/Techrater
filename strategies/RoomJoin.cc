@@ -43,15 +43,15 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                 player->type = Player::Type::Gamer;
             }
             player->setRoom(room);
-            MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
-
             room->subscribe(player->playerId);
+
+            MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
             room->publish(
                     MessageJson(_action).setData(player->info()),
                     player->playerId
             );
         } else {
-            throw MessageException("wrongPassword");
+            throw MessageException(i18n("wrongPassword"));
         }
     }, _action, wsConnPtr);
 }

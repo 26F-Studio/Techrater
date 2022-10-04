@@ -38,20 +38,13 @@ void RoomLeave::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &re
             room = wsConnPtr->getContext<Player>()->getRoom();
         }
 
+        room->unsubscribe(player->playerId);
+
         Json::Value data;
         data["playerId"] = player->playerId;
-        auto message = MessageJson(_action).setData(std::move(data));
-
-        room->unsubscribe(player->playerId);
-        room->publish(message, player->playerId);
+        room->publish(MessageJson(_action).setData(std::move(data)), player->playerId);
 
         player->reset();
-        message.setMessageType(MessageType::Server).to(wsConnPtr);
-
-        if (room->empty()) {
-            roomManager->removeRoom(room->roomId);
-        } else {
-            room->endGame();
-        }
+        MessageJson(_action).to(wsConnPtr);
     }, _action, wsConnPtr);
 }

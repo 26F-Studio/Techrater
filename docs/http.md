@@ -452,8 +452,7 @@ None
   "region": 1,
   "avatar": "BASE64_STRING",
   "avatar_frame": 12,
-  "clan": "Miya fan club",
-  "password": "HASHED_STRING"
+  "clan": 26
 }
 ```
 
