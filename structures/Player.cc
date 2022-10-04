@@ -4,12 +4,14 @@
 
 #include <magic_enum.hpp>
 #include <structures/Player.h>
+#include <types/Action.h>
 
 using namespace drogon;
 using namespace drogon_model;
 using namespace magic_enum;
 using namespace std;
 using namespace techmino::structures;
+using namespace techmino::types;
 
 Player::Player(
         int64_t playerId,
@@ -36,6 +38,9 @@ Player::~Player() {
     // TODO: Check if this would cause problems
     if (_room) {
         _room->unsubscribe(playerId);
+        Json::Value data;
+        data["playerId"] = playerId;
+        _room->publish(MessageJson(enum_integer(Action::RoomLeave)).setData(std::move(data)), playerId);
     }
 }
 

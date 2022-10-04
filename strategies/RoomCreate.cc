@@ -21,8 +21,17 @@ using namespace techmino::types;
 RoomCreate::RoomCreate() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
 
 optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    if (wsConnPtr->getContext<Player>()->getRoom()) {
-        return i18n("notAvailable");
+    const auto &player = wsConnPtr->getContext<Player>();
+    const auto &room = player->getRoom();
+    if (room) {
+        room->unsubscribe(player->playerId);
+
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        room->publish(MessageJson(_action).setData(std::move(data)), player->playerId);
+
+        player->reset();
+        MessageJson(_action).to(wsConnPtr);
     }
 
     if (!request.check("capacity", JsonValue::UInt64) ||
@@ -40,7 +49,7 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
 void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        auto room = make_shared<Room>  (
+        auto room = make_shared<Room>(
                 request["capacity"].asUInt64(),
                 std::move(request["password"].asString()),
                 request["info"],

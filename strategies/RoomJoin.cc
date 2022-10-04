@@ -21,8 +21,19 @@ using namespace techmino::types;
 RoomJoin::RoomJoin() : MessageHandlerBase(enum_integer(Action::RoomJoin)) {}
 
 optional<string> RoomJoin::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    if (wsConnPtr->getContext<Player>()->getRoom()) {
-        return i18n("notAvailable");
+    const auto &player = wsConnPtr->getContext<Player>();
+    const auto &room = player->getRoom();
+    if (room) {
+        room->unsubscribe(player->playerId);
+
+        player->reset();
+
+        auto message = MessageJson(enum_integer(Action::RoomLeave));
+        message.to(wsConnPtr);
+
+        Json::Value data;
+        data["playerId"] = player->playerId;
+        room->publish(message.setData(std::move(data)), player->playerId);
     }
 
     if (!request.check("roomId", JsonValue::String)) {
