@@ -21,48 +21,37 @@ using namespace techmino::types;
 RoomJoin::RoomJoin() : MessageHandlerBase(enum_integer(Action::RoomJoin)) {}
 
 optional<string> RoomJoin::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    const auto &player = wsConnPtr->getContext<Player>();
-    const auto &room = player->getRoom();
-    if (room) {
-        room->unsubscribe(player->playerId);
-
-        player->reset();
-
-        auto message = MessageJson(enum_integer(Action::RoomLeave));
-        message.to(wsConnPtr);
-
-        Json::Value data;
-        data["playerId"] = player->playerId;
-        room->publish(message.setData(std::move(data)), player->playerId);
-    }
-
     if (!request.check("roomId", JsonValue::String)) {
         return i18n("invalidArguments");
     }
 
     request.trim("password", JsonValue::String);
-
     return nullopt;
 }
 
 void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        auto room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
-        if (room->checkPassword(request["password"].asString())) {
-            if (!room->full() && room->cancelStart()) {
-                player->type = Player::Type::Gamer;
-            }
-            player->setRoom(room);
-            room->subscribe(player->playerId);
-
+        auto room = player->getRoom();
+        if (room) {
             MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
-            room->publish(
-                    MessageJson(_action).setData(player->info()),
-                    player->playerId
-            );
         } else {
-            throw MessageException(i18n("wrongPassword"));
+            room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
+            if (room->checkPassword(request["password"].asString())) {
+                if (!room->full() && room->cancelStart()) {
+                    player->type = Player::Type::Gamer;
+                }
+                player->setRoom(room);
+                room->subscribe(player->playerId);
+
+                MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
+                room->publish(
+                        MessageJson(_action).setData(player->info()),
+                        player->playerId
+                );
+            } else {
+                throw MessageException(i18n("wrongPassword"));
+            }
         }
     }, _action, wsConnPtr);
 }

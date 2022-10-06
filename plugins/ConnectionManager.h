@@ -30,6 +30,8 @@ namespace techmino::plugins {
 
         drogon::WebSocketConnectionPtr getConnPtr(int64_t userId);
 
+        uint64_t count() const;
+
     private:
         mutable std::shared_mutex _sharedMutex;
         std::unordered_map<int64_t, drogon::WebSocketConnectionPtr> _connectionMap;

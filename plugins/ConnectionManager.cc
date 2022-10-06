@@ -74,3 +74,8 @@ WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t userId) {
         throw MessageException(i18n("playerNotFound"), e);
     }
 }
+
+uint64_t ConnectionManager::count() const {
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    return _connectionMap.size();
+}

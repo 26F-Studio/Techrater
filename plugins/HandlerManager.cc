@@ -4,6 +4,7 @@
 
 #include <magic_enum.hpp>
 #include <plugins/HandlerManager.h>
+#include <strategies/GlobalOnlineCount.h>
 #include <strategies/PlayerConfig.h>
 #include <strategies/PlayerFinish.h>
 #include <strategies/PlayerGroup.h>
@@ -36,6 +37,8 @@ using namespace techmino::types;
 using namespace techmino::utils;
 
 void HandlerManager::initAndStart(const Json::Value &config) {
+    _handlerFactory.registerHandler<GlobalOnlineCount>(enum_integer(Action::GlobalOnlineCount));
+
     _handlerFactory.registerHandler<PlayerConfig>(enum_integer(Action::PlayerConfig));
     _handlerFactory.registerHandler<PlayerFinish>(enum_integer(Action::PlayerFinish));
     _handlerFactory.registerHandler<PlayerGroup>(enum_integer(Action::PlayerGroup));

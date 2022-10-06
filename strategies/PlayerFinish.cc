@@ -45,6 +45,6 @@ void PlayerFinish::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson 
         player->state = Player::State::Finished;
         auto room = player->getRoom();
         room->publish(MessageJson(_action).setData(std::move(data)));
-        room->endGame();
+        room->matchEnd();
     }, _action, wsConnPtr);
 }

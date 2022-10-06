@@ -47,7 +47,7 @@ void PlayerReady::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &
         auto room = player->getRoom();
         room->publish(MessageJson(_action).setData(std::move(data)));
         if (isReady) {
-            room->startGame();
+            room->matchStart();
         } else {
             room->cancelStart();
         }

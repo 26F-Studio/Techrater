@@ -41,9 +41,12 @@ namespace techmino::ws::v1 {
 
             switch (type) {
                 case WebSocketMessageType::Text:
-                case WebSocketMessageType::Binary:
-                    requestHandler(wsConnPtr, BasicJson(message).ref());
+                case WebSocketMessageType::Binary: {
+                    auto request = BasicJson(message);
+                    LOG_TRACE << request.stringify("  ");
+                    requestHandler(wsConnPtr, request.ref());
                     break;
+                }
                 case WebSocketMessageType::Ping:
                     wsConnPtr->send(message, WebSocketMessageType::Pong);
                     break;

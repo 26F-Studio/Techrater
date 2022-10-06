@@ -49,7 +49,7 @@ Room::Room(Room &&room) noexcept:
 
 Room::~Room() {
     cancelStart();
-    endGame(true);
+    matchEnd(true);
     for (const auto playerId: _playerSet) {
         const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
         wsConnPtr->getContext<Player>()->reset();
@@ -91,7 +91,7 @@ void Room::unsubscribe(int64_t playerId) {
     if (empty(true)) {
         app().getPlugin<RoomManager>()->removeRoom(roomId);
     } else if (empty()) {
-        endGame();
+        matchEnd();
     }
 }
 
@@ -212,18 +212,18 @@ void Room::appendChat(Json::Value &&chat) {
     _chatList.push_back(std::move(chat));
 }
 
-void Room::startGame(bool force) {
+void Room::matchStart(bool force) {
     if (state != State::Standby ||
         (!force && countStandby() > 0)) {
         return;
     }
 
     state = State::Ready;
-    publish(MessageJson(enum_integer(Action::GameReady)).setMessageType(MessageType::Server));
+    publish(MessageJson(enum_integer(Action::MatchReady)).setMessageType(MessageType::Server));
 
     startTimerId = app().getLoop()->runAfter(3, [this]() {
         state = State::Playing;
-        publish(MessageJson(enum_integer(Action::GameStart)).setMessageType(MessageType::Server));
+        publish(MessageJson(enum_integer(Action::MatchStart)).setMessageType(MessageType::Server));
     });
 }
 
@@ -236,7 +236,7 @@ bool Room::cancelStart() {
     return false;
 }
 
-void Room::endGame(bool force) {
+void Room::matchEnd(bool force) {
     if (state != State::Playing ||
         (!force && countPlaying() > 0)) {
         return;
@@ -250,7 +250,7 @@ void Room::endGame(bool force) {
         }
     }
 
-    publish(MessageJson(enum_integer(Action::GameEnd), MessageType::Server));
+    publish(MessageJson(enum_integer(Action::MatchEnd), MessageType::Server));
 }
 
 uint64_t Room::countGamer() const {

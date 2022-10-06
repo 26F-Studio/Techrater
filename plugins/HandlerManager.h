@@ -10,6 +10,8 @@
 namespace techmino::plugins {
     class HandlerManager : public structures::HandlerManagerBase<HandlerManager> {
     public:
+        static constexpr char projectName[] = CMAKE_PROJECT_NAME;
+    public:
         void initAndStart(const Json::Value &config) override;
 
         void shutdown() override;

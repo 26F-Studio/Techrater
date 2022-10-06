@@ -82,11 +82,11 @@ namespace techmino::structures {
 
         void appendChat(Json::Value &&chat);
 
-        void startGame(bool force = false);
+        void matchStart(bool force = false);
 
         bool cancelStart();
 
-        void endGame(bool force = false);
+        void matchEnd(bool force = false);
 
 
     private:

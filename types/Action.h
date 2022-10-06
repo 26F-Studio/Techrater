@@ -6,10 +6,13 @@
 
 namespace techmino::types {
     enum class Action {
-        /// Game actions
-        GameEnd = 1100,
-        GameReady,
-        GameStart,
+        /// Global actions
+        GlobalOnlineCount = 1000,
+
+        /// Match actions
+        MatchEnd = 1100,
+        MatchReady,
+        MatchStart,
 
         /// Player actions
         PlayerConfig = 1200,

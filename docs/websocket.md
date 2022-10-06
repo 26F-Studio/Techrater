@@ -64,9 +64,9 @@ enum class MessageType {
 ```c++
 enum class Action {
     /// Game actions
-    GameEnd = 1100,
-    GameReady,
-    GameStart,
+    MatchEnd = 1100,
+    MatchReady,
+    MatchStart,
 
     /// Player actions
     PlayerConfig = 1200,

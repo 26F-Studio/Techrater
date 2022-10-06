@@ -21,6 +21,13 @@ using namespace techmino::types;
 RoomCreate::RoomCreate() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
 
 optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (!request.check("capacity", JsonValue::UInt64) ||
+        !request.check("info", JsonValue::Object) ||
+        !request.check("data", JsonValue::Object) ||
+        request["capacity"].asUInt64() == 0) {
+        return i18n("invalidArguments");
+    }
+
     const auto &player = wsConnPtr->getContext<Player>();
     const auto &room = player->getRoom();
     if (room) {
@@ -34,13 +41,6 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
         Json::Value data;
         data["playerId"] = player->playerId;
         room->publish(message.setData(std::move(data)), player->playerId);
-    }
-
-    if (!request.check("capacity", JsonValue::UInt64) ||
-        !request.check("info", JsonValue::Object) ||
-        !request.check("data", JsonValue::Object) ||
-        request["capacity"].asUInt64() == 0) {
-        return i18n("invalidArguments");
     }
 
     request.trim("password", JsonValue::String);
