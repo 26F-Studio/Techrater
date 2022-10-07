@@ -9,7 +9,7 @@
 
 /**
  * @brief This filter checks param "playerId" and set attribute "playerId"
- * @param id: in query string
+ * @param playerId: in query string
  * @return playerId: Int64
  */
 

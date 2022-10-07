@@ -5,7 +5,7 @@
 #pragma once
 
 #include <drogon/HttpController.h>
-#include <plugins/PlayerManager.h>
+#include <plugins/NoticeManager.h>
 #include <structures/ExceptionHandlers.h>
 
 namespace techmino::api::v1 {
@@ -60,6 +60,6 @@ namespace techmino::api::v1 {
         void deleteNotice(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
 
     private:
-        techmino::plugins::PlayerManager *_playerManager;
+        techmino::plugins::NoticeManager *_noticeManager;
     };
 }

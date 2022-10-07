@@ -242,7 +242,7 @@ void PlayerManager::resetEmail(
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
-                i18n("userNotFound"),
+                i18n("playerNotFound"),
                 ResultCode::NotFound,
                 k404NotFound
         );
@@ -319,7 +319,7 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
-                i18n("userNotFound"),
+                i18n("playerNotFound"),
                 ResultCode::NotFound,
                 k404NotFound
         );
@@ -350,7 +350,7 @@ Json::Value PlayerManager::getPlayerInfo(
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
-                i18n("userNotFound"),
+                i18n("playerNotFound"),
                 ResultCode::NotFound,
                 k404NotFound
         );
@@ -401,7 +401,7 @@ Json::Value PlayerManager::getPlayerData(
     } catch (const orm::UnexpectedRows &e) {
         LOG_DEBUG << "Unexpected rows: " << e.what();
         throw ResponseException(
-                i18n("userNotFound"),
+                i18n("playerNotFound"),
                 ResultCode::NotFound,
                 k404NotFound
         );

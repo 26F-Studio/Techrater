@@ -61,6 +61,128 @@ enum class ResultCode : uint32_t {
 };
 ```
 
+## API Group: `Notice`
+
+### /
+
+#### Description
+
+Notice related actions.
+`Create`, `Update` and `Delete` needs `Admin` permission.
+
+#### Request
+
+##### Method
+
+- Post
+- Get
+- Put
+- Delete
+
+##### Params
+
+- `Get`
+
+```json
+// Get last 10 notices
+{
+  "lastCount": 10,
+  "language": "zh_cn"
+}
+
+// Get a page
+{
+  "pageIndex": 2,
+  "pageSize": 5,
+  "language": "zh_cn"
+}
+```
+
+- Delete
+
+```json
+{
+  "noticeId": 12
+}
+```
+
+##### Headers
+
+- x-access-token: Required in `Post`, `Put` and `Delete`
+
+##### Body
+
+- `Post`, `Put`
+
+```json
+{
+  "en_us": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "zh_cn": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "zh_tw": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "fr_fr": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "es_es": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "pt_pt": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "id_id": "ANY_STRING",
+  // Optional, but at least specify one of these
+  "ja_jp": "ANY_STRING"
+  // Optional, but at least specify one of these
+}
+```
+
+#### Response
+
+##### Status Code
+
+200
+
+##### Body
+
+- `Post`,
+
+```json
+{
+  "noticeId": 25
+}
+```
+
+- `Put`, `Delete`
+
+```json
+{
+  "code": 200
+}
+```
+
+- `Get`
+
+```json
+{
+  "language": "zh_cn",
+  "contents": [
+    {
+      "id": 25,
+      "timestamp": "TIME_STRING",
+      "content": "ANY_STRING"
+    },
+    {
+      "id": 24,
+      "timestamp": "TIME_STRING",
+      "content": "ANY_STRING"
+    },
+    {
+      "id": 23,
+      "content": "ANY_STRING"
+    }
+  ]
+}
+```
+
 ## API Group: `Auth`
 
 ### /check

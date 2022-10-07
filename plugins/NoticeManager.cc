@@ -39,38 +39,73 @@ uint64_t NoticeManager::createNotice(const Json::Value &contents) {
 }
 
 Json::Value NoticeManager::retrieveNotice(uint64_t lastCount, const string &language) {
-    Json::Value result(Json::arrayValue);
+    Json::Value result;
+
+    bool hasLanguage = false;
+    for (uint64_t index = 0; index < techrater::Notice::getColumnNumber(); index++) {
+        if (techrater::Notice::getColumnName(index) == language) {
+            hasLanguage = true;
+            break;
+        }
+    }
+    if (hasLanguage) {
+        result["language"] = language;
+    } else {
+        result["language"] = _fallbackLanguage;
+    }
+
+    Json::Value contents(Json::arrayValue);
     for (const auto &notice: _noticeMapper.orderBy(
             techrater::Notice::Cols::_id,
             orm::SortOrder::DESC
     ).limit(lastCount).findAll()) {
-        Json::Value tempResult, noticeJson = notice.toJson();
-        tempResult["id"] = noticeJson["id"];
+        Json::Value tempContent, noticeJson = notice.toJson();
+        tempContent["id"] = noticeJson["id"];
         if (noticeJson[language].isNull()) {
-            tempResult["content"] = noticeJson[_fallbackLanguage];
+            tempContent["content"] = noticeJson[_fallbackLanguage];
         } else {
-            tempResult["content"] = noticeJson[language];
+            tempContent["content"] = noticeJson[language];
         }
-        result.append(tempResult);
+        contents.append(tempContent);
     }
+
+    result["contents"] = std::move(contents);
     return result;
 }
 
 Json::Value NoticeManager::retrieveNotice(uint64_t pageIndex, uint64_t pageSize, const string &language) {
-    Json::Value result(Json::arrayValue);
+    Json::Value result;
+
+    bool hasLanguage = false;
+    for (uint64_t index = 0; index < techrater::Notice::getColumnNumber(); index++) {
+        if (techrater::Notice::getColumnName(index) == language) {
+            hasLanguage = true;
+            break;
+        }
+    }
+    if (hasLanguage) {
+        result["language"] = language;
+    } else {
+        result["language"] = _fallbackLanguage;
+    }
+
+    Json::Value contents(Json::arrayValue);
     for (const auto &notice: _noticeMapper.orderBy(
             techrater::Notice::Cols::_id,
             orm::SortOrder::DESC
     ).paginate(pageIndex, pageSize).findAll()) {
-        Json::Value tempResult, noticeJson = notice.toJson();
-        tempResult["id"] = noticeJson["id"];
-        if (noticeJson[language].isNull()) {
-            tempResult["content"] = noticeJson[_fallbackLanguage];
+        Json::Value tempContent, noticeJson = notice.toJson();
+        tempContent["id"] = noticeJson["id"];
+        tempContent["timestamp"] = noticeJson["timestamp"];
+        if (hasLanguage) {
+            tempContent["content"] = noticeJson[language];
         } else {
-            tempResult["content"] = noticeJson[language];
+            tempContent["content"] = noticeJson[_fallbackLanguage];
         }
-        result.append(tempResult);
+        contents.append(tempContent);
     }
+
+    result["contents"] = std::move(contents);
     return result;
 }
 
@@ -94,5 +129,18 @@ void NoticeManager::updateNotice(uint64_t noticeId, const Json::Value &contents)
 }
 
 void NoticeManager::deleteNotice(uint64_t noticeId) {
-
+    try {
+        _noticeMapper.deleteBy(orm::Criteria(
+                techrater::Notice::Cols::_id,
+                orm::CompareOperator::EQ,
+                noticeId
+        ));
+    } catch (const orm::UnexpectedRows &e) {
+        LOG_DEBUG << "Unexpected rows: " << e.what();
+        throw ResponseException(
+                i18n("noticeNotFound"),
+                ResultCode::NotFound,
+                k404NotFound
+        );
+    }
 }
