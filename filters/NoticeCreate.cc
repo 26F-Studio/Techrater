@@ -2,7 +2,7 @@
 // Created by particleg on 2021/9/27.
 //
 
-#include <filters/PlayerUpdateInfo.h>
+#include <filters/NoticeCreate.h>
 #include <helpers/RequestJson.h>
 
 using namespace drogon;
@@ -11,7 +11,7 @@ using namespace techmino::filters;
 using namespace techmino::helpers;
 using namespace techmino::types;
 
-void PlayerUpdateInfo::doFilter(
+void NoticeCreate::doFilter(
         const HttpRequestPtr &req,
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb

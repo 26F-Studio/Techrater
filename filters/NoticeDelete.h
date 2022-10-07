@@ -13,9 +13,9 @@
  * @return noticeId: in request attributes
  */
 namespace techmino::filters {
-    class PlayerUpdateInfo :
-            public drogon::HttpFilter<PlayerUpdateInfo>,
-            public helpers::I18nHelper<PlayerUpdateInfo> {
+    class NoticeDelete :
+            public drogon::HttpFilter<NoticeDelete>,
+            public helpers::I18nHelper<NoticeDelete> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 

@@ -2,21 +2,17 @@
 // Created by particleg on 2021/9/27.
 //
 
-#include <filters/CheckAccessToken.h>
+#include <filters/NoticeRetrieve.h>
 #include <helpers/ResponseJson.h>
-#include <plugins/PlayerManager.h>
-#include <structures/Exceptions.h>
 #include <types/ResultCode.h>
 
 using namespace drogon;
 using namespace std;
 using namespace techmino::filters;
 using namespace techmino::helpers;
-using namespace techmino::plugins;
-using namespace techmino::structures;
 using namespace techmino::types;
 
-void CheckAccessToken::doFilter(
+void NoticeRetrieve::doFilter(
         const HttpRequestPtr &req,
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb

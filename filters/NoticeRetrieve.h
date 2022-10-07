@@ -20,9 +20,9 @@
  */
 
 namespace techmino::filters {
-    class CheckAccessToken :
-            public drogon::HttpFilter<CheckAccessToken>,
-            public helpers::I18nHelper<CheckAccessToken> {
+    class NoticeRetrieve :
+            public drogon::HttpFilter<NoticeRetrieve>,
+            public helpers::I18nHelper<NoticeRetrieve> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 

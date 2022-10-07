@@ -20,9 +20,9 @@
  * @return contents: in request attributes
  */
 namespace techmino::filters {
-    class PlayerUpdateInfo :
-            public drogon::HttpFilter<PlayerUpdateInfo>,
-            public structures::RequestJsonHandler<PlayerUpdateInfo> {
+    class NoticeUpdate :
+            public drogon::HttpFilter<NoticeUpdate>,
+            public structures::RequestJsonHandler<NoticeUpdate> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 

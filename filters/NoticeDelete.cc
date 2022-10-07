@@ -2,16 +2,14 @@
 // Created by particleg on 2021/9/27.
 //
 
-#include <filters/PlayerUpdateInfo.h>
-#include <helpers/RequestJson.h>
+#include <filters/NoticeDelete.h>
 
 using namespace drogon;
 using namespace std;
 using namespace techmino::filters;
 using namespace techmino::helpers;
-using namespace techmino::types;
 
-void PlayerUpdateInfo::doFilter(
+void NoticeDelete::doFilter(
         const HttpRequestPtr &req,
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
