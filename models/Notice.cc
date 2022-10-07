@@ -23,12 +23,12 @@ const std::string Notice::Cols::_es_es = "es_es";
 const std::string Notice::Cols::_pt_pt = "pt_pt";
 const std::string Notice::Cols::_id_id = "id_id";
 const std::string Notice::Cols::_ja_jp = "ja_jp";
-const std::string Notice::primaryKeyName = "";
-const bool Notice::hasPrimaryKey = false;
+const std::string Notice::primaryKeyName = "id";
+const bool Notice::hasPrimaryKey = true;
 const std::string Notice::tableName = "notice";
 
 const std::vector<typename Notice::MetaData> Notice::metaData_={
-{"id","int64_t","bigint",8,1,0,1},
+{"id","int64_t","bigint",8,1,1,1},
 {"create_time","::trantor::Date","timestamp without time zone",0,0,0,0},
 {"en_us","std::string","text",0,0,0,0},
 {"zh_cn","std::string","text",0,0,0,0},
@@ -620,6 +620,11 @@ void Notice::setId(const int64_t &pId) noexcept
 {
     id_ = std::make_shared<int64_t>(pId);
     dirtyFlag_[0] = true;
+}
+const typename Notice::PrimaryKeyType & Notice::getPrimaryKey() const
+{
+    assert(id_);
+    return *id_;
 }
 
 const ::trantor::Date &Notice::getValueOfCreateTime() const noexcept
@@ -1574,6 +1579,11 @@ bool Notice::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
         if(!validJsonOfField(0, "id", pJson["id"], err, false))
             return false;
     }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
     if(pJson.isMember("create_time"))
     {
         if(!validJsonOfField(1, "create_time", pJson["create_time"], err, false))
@@ -1636,6 +1646,11 @@ bool Notice::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
               return false;
       }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
       if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
       {
           if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
@@ -1706,11 +1721,6 @@ bool Notice::validJsonOfField(size_t index,
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
-                return false;
-            }
-            else
-            {
-                err="The automatic primary key cannot be update";
                 return false;
             }
             if(!pJson.isInt64())
