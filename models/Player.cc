@@ -2017,7 +2017,6 @@ bool Player::validJsonOfField(size_t index,
         default:
             err="Internal error in the server";
             return false;
-            break;
     }
     return true;
 }
