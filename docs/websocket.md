@@ -18,7 +18,7 @@
 
 ```json
 {
-    "type": "Failed",
+    "errno": 1,
     // Action number (Optional if message is not related to an action)
     "action": 1001,
     // Failed message's I18N path
@@ -34,7 +34,7 @@
 
 ```json
 {
-    "type": "Error",
+    "errno": -1,
     // Action number (Optional if message is not related to an action)
     "action": 1001,
     // Failed message's I18N path
@@ -161,7 +161,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Server"
+    "errno": 0
 }
 ```
 
@@ -186,7 +186,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Server"
+    "errno": 0
 }
 ```
 
@@ -211,7 +211,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Server"
+    "errno": 0
 }
 ```
 
@@ -244,7 +244,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "config": "BASE64_STRING"
@@ -279,7 +279,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "data": ANY_OBJECT
@@ -313,7 +313,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "group": GROUP_NUMBER
@@ -348,7 +348,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "isReady": true
@@ -387,7 +387,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 111,
         "role": "Admin"
@@ -397,7 +397,7 @@ All ***users*** in the room
 // Below would also be sent if swap happens
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "role": "Normal"
@@ -432,7 +432,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "customState": "ANY_STRING"
@@ -467,7 +467,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "data": "BASE64_STRING"
@@ -504,7 +504,7 @@ All ***users*** in the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "type": "Gamer"
@@ -545,7 +545,7 @@ All ***users*** in the specific room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 123,
         "message": "ANY_STRING"
@@ -585,7 +585,7 @@ The ***user*** who created the room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     // Room ID
     "data": "HEX_STRING"
 }
@@ -620,7 +620,7 @@ The ***user*** who send the request
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     // Room data
     "data": ANY_OBJECT
 }
@@ -657,7 +657,7 @@ All ***users*** in the specific room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 11,
         "data": ANY_OBJECT
@@ -694,7 +694,7 @@ The ***user*** who send the request
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     // Room info
     "data": ANY_OBJECT
 }
@@ -731,7 +731,7 @@ All ***users*** in the specific room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 11,
         "info": ANY_OBJECT
@@ -771,7 +771,7 @@ Join a room.
 // To the user who joined the room
 {
     "action": ACTION_NUMBER,
-    "type": "Server",
+    "errno": 0,
     "data": {
         "roomId": "HEX_STRING",
         "capacity": 2,
@@ -846,7 +846,7 @@ Join a room.
 // To other users in the room
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     // Joined player's info
     "data": {
         "playerId": 15,
@@ -893,7 +893,7 @@ player is global admin.
 // To the user who was kicked
 {
     "action": ACTION_NUMBER,
-    "type": "Server",
+    "errno": 0,
     "data": {
         "executorId": 11,
         "playerId": 13
@@ -903,7 +903,7 @@ player is global admin.
 // To other users in the room
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "executorId": 11,
         "playerId": 13
@@ -938,13 +938,13 @@ Leave current room.
 // To the user who leaves the room
 {
     "action": ACTION_NUMBER,
-    "type": "Server"
+    "errno": 0
 }
 
 // To other users in the room
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 11
     }
@@ -981,7 +981,7 @@ The ***user*** who send the request
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": [
         {
             "roomId": "HEX_STRING",
@@ -1048,7 +1048,7 @@ All ***users*** in the specific room
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client",
+    "errno": 0,
     "data": {
         "playerId": 11,
         "password": "ANY_STRING"
@@ -1088,7 +1088,7 @@ Remove current room, need to be the room admin. Can remove other room by specify
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Client"
+    "errno": 0
 }
 ```
 
@@ -1097,7 +1097,7 @@ Remove current room, need to be the room admin. Can remove other room by specify
 ```json
 {
     "action": ACTION_NUMBER,
-    "type": "Server"
+    "errno": 0
 }
 ```
 
