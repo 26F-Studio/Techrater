@@ -21,6 +21,10 @@ using namespace techmino::types;
 RoomCreate::RoomCreate() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
 
 optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (!wsConnPtr->getContext<Player>()->hasConfig()) {
+        return i18n("notAvailable");
+    }
+
     if (!request.check("capacity", JsonValue::UInt64) ||
         !request.check("info", JsonValue::Object) ||
         !request.check("data", JsonValue::Object) ||

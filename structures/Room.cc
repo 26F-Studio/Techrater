@@ -53,7 +53,7 @@ Room::~Room() {
     for (const auto playerId: _playerSet) {
         const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
         wsConnPtr->getContext<Player>()->reset();
-        MessageJson(enum_integer(Action::RoomRemove), MessageType::Server).to(wsConnPtr);
+        MessageJson(enum_integer(Action::RoomRemove)).to(wsConnPtr);
     }
 }
 
@@ -219,11 +219,11 @@ void Room::matchStart(bool force) {
     }
 
     state = State::Ready;
-    publish(MessageJson(enum_integer(Action::MatchReady)).setMessageType(MessageType::Server));
+    publish(MessageJson(enum_integer(Action::MatchReady)));
 
     startTimerId = app().getLoop()->runAfter(3, [this]() {
         state = State::Playing;
-        publish(MessageJson(enum_integer(Action::MatchStart)).setMessageType(MessageType::Server));
+        publish(MessageJson(enum_integer(Action::MatchStart)));
     });
 }
 
@@ -250,7 +250,7 @@ void Room::matchEnd(bool force) {
         }
     }
 
-    publish(MessageJson(enum_integer(Action::MatchEnd), MessageType::Server));
+    publish(MessageJson(enum_integer(Action::MatchEnd)));
 }
 
 uint64_t Room::countGamer() const {

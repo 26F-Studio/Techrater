@@ -65,14 +65,14 @@ void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
 
         Json::Value data;
         data["executorId"] = player->playerId;
-        data["targetId"] = target->playerId;
+        data["playerId"] = target->playerId;
         auto message = MessageJson(_action).setData(std::move(data));
 
         room->unsubscribe(target->playerId);
         room->publish(message, target->playerId);
 
         target->reset();
-        message.setMessageType(MessageType::Server).to(targetConnPtr);
+        message.to(targetConnPtr);
 
         if (room->empty()) {
             roomManager->removeRoom(room->roomId);

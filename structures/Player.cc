@@ -66,6 +66,11 @@ void Player::setConfig(string &&config) {
     _config = std::move(config);
 }
 
+bool Player::hasConfig() const {
+    shared_lock<shared_mutex> lock(_dataMutex);
+    return !_config.empty();
+}
+
 void Player::appendHistory(const std::string &history) {
     unique_lock<shared_mutex> lock(_historyMutex);
     _history += history;

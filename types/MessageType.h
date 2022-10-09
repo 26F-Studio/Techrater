@@ -8,9 +8,8 @@
 
 namespace techmino::types {
     enum class MessageType {
-        Error,
+        Error = -1,
+        Success = 0,
         Failed,
-        Client,
-        Server,
     };
 }

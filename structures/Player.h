@@ -60,6 +60,8 @@ namespace techmino::structures {
 
         void setConfig(std::string &&config);
 
+        bool hasConfig() const;
+
         void appendHistory(const std::string &history);
 
         [[nodiscard]] std::string history() const;

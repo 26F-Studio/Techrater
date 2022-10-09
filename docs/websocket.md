@@ -44,10 +44,10 @@
 }
 ```
 
-## Message Type List
+## Error Number List
 
 ```c++
-enum class MessageType {
+enum class ErrorNumber {
     // Error message, would close the connection
     Error,
     // Failure message
@@ -898,7 +898,7 @@ player is global admin.
   "type": "Server",
   "data": {
     "executorId": 11,
-    "targetId": 13
+    "playerId": 13
   }
 }
 
@@ -908,7 +908,7 @@ player is global admin.
   "type": "Client",
   "data": {
     "executorId": 11,
-    "targetId": 13
+    "playerId": 13
   }
 }
 ```
@@ -1080,9 +1080,21 @@ Remove current room, need to be the room admin. Can remove other room by specify
 
 ##### Targets
 
-All ***users*** in the specific room
+- Executor
+- All ***users*** in the specific room
 
 ##### Message
+
+- Executor
+
+```json
+{
+  "action": ACTION_NUMBER,
+  "type": "Client"
+}
+```
+
+- All ***users*** in the specific room
 
 ```json
 {

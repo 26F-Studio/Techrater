@@ -11,13 +11,13 @@
 namespace techmino::helpers {
     class MessageJson : public BasicJson {
     public:
-        explicit MessageJson(types::MessageType messageType = types::MessageType::Client);
+        explicit MessageJson(types::MessageType messageType = types::MessageType::Success);
 
-        explicit MessageJson(Json::Value json, types::MessageType messageType = types::MessageType::Client);
+        explicit MessageJson(Json::Value json, types::MessageType messageType = types::MessageType::Success);
 
-        explicit MessageJson(const std::string &raw, types::MessageType messageType = types::MessageType::Client);
+        explicit MessageJson(const std::string &raw, types::MessageType messageType = types::MessageType::Success);
 
-        explicit MessageJson(int action, types::MessageType messageType = types::MessageType::Client);
+        explicit MessageJson(int action, types::MessageType messageType = types::MessageType::Success);
 
         MessageJson &setMessageType(types::MessageType type);
 

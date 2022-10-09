@@ -4,7 +4,6 @@
 
 #include <helpers/MessageJson.h>
 #include <magic_enum.hpp>
-#include <plugins/RoomManager.h>
 #include <strategies/PlayerConfig.h>
 #include <structures/Player.h>
 #include <types/Action.h>
@@ -22,11 +21,6 @@ using namespace techmino::types;
 PlayerConfig::PlayerConfig() : MessageHandlerBase(enum_integer(Action::PlayerConfig)) {}
 
 optional<string> PlayerConfig::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    const auto &player = wsConnPtr->getContext<Player>();
-    if (!player->getRoom()) {
-        return i18n("notAvailable");
-    }
-
     if (!request.check(JsonValue::String)) {
         return i18n("invalidArguments");
     }
@@ -36,11 +30,12 @@ optional<string> PlayerConfig::filter(const WebSocketConnectionPtr &wsConnPtr, R
 void PlayerConfig::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
-        Json::Value data;
-        data["playerId"] = player->playerId;
-        data["config"] = request.ref().asString();
-
-        player->setConfig(std::move(request.ref().asString()));
-        player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
+        player->setConfig(request.ref().asString());
+        if (player->getRoom()) {
+            Json::Value data;
+            data["playerId"] = player->playerId;
+            data["config"] = request.ref().asString();
+            player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
+        }
     }, _action, wsConnPtr);
 }

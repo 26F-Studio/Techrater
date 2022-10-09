@@ -24,7 +24,7 @@ MessageJson::MessageJson(int action, MessageType messageType) :
         MessageJson(messageType) { setAction(action); }
 
 MessageJson &MessageJson::setMessageType(MessageType type) {
-    _value["type"] = string(enum_name(type));
+    _value["errno"] = enum_integer(type);
     return *this;
 }
 
@@ -62,7 +62,7 @@ MessageJson &MessageJson::setMessage(const string &message) {
 
 void MessageJson::to(const WebSocketConnectionPtr &connectionPtr) const {
     if (connectionPtr->connected()) {
-        if (enum_cast<MessageType>(_value["type"].asString()).value_or(MessageType::Client) == MessageType::Error) {
+        if (enum_cast<MessageType>(_value["errno"].asInt()).value_or(MessageType::Success) == MessageType::Error) {
             connectionPtr->shutdown(CloseCode::kViolation, stringify());
         } else {
             connectionPtr->send(stringify());

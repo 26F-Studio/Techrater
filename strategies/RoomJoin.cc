@@ -21,6 +21,10 @@ using namespace techmino::types;
 RoomJoin::RoomJoin() : MessageHandlerBase(enum_integer(Action::RoomJoin)) {}
 
 optional<string> RoomJoin::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    if (!wsConnPtr->getContext<Player>()->hasConfig()) {
+        return i18n("notAvailable");
+    }
+
     if (!request.check("roomId", JsonValue::String)) {
         return i18n("invalidArguments");
     }
@@ -34,7 +38,7 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
     handleExceptions([&]() {
         auto room = player->getRoom();
         if (room) {
-            MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
+            MessageJson(_action).setData(room->parse(true)).to(wsConnPtr);
         } else {
             room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
             if (room->checkPassword(request["password"].asString())) {
@@ -44,7 +48,7 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                 player->setRoom(room);
                 room->subscribe(player->playerId);
 
-                MessageJson(_action, MessageType::Server).setData(room->parse(true)).to(wsConnPtr);
+                MessageJson(_action).setData(room->parse(true)).to(wsConnPtr);
                 room->publish(
                         MessageJson(_action).setData(player->info()),
                         player->playerId
