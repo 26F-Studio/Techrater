@@ -25,14 +25,14 @@ namespace techmino::structures {
             try {
                 const auto &handler = _handlerFactory.getHandler(action);
                 if (const auto message = handler.filter(wsConnPtr, request)) {
-                    MessageJson(action, MessageType::Failed)
+                    MessageJson(action, ErrorNumber::Failed)
                             .setMessage(message.value())
                             .to(wsConnPtr);
                     return;
                 }
                 handler.process(wsConnPtr, request);
             } catch (const action_exception::ActionNotFound &) {
-                MessageJson(action, MessageType::Failed)
+                MessageJson(action, ErrorNumber::Failed)
                         .setMessage(I18nHelper<T>::i18n("invalidArguments"))
                         .to(wsConnPtr);
             }

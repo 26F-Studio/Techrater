@@ -7,7 +7,7 @@
 #include <drogon/drogon.h>
 
 namespace techmino::types {
-    enum class MessageType {
+    enum class ErrorNumber {
         Error = -1,
         Success = 0,
         Failed,

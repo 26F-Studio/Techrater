@@ -6,20 +6,18 @@
 
 #include <drogon/WebSocketConnection.h>
 #include <helpers/BasicJson.h>
-#include <types/MessageType.h>
+#include <types/ErrorNumber.h>
 
 namespace techmino::helpers {
     class MessageJson : public BasicJson {
     public:
-        explicit MessageJson(types::MessageType messageType = types::MessageType::Success);
+        explicit MessageJson(types::ErrorNumber messageType = types::ErrorNumber::Success);
 
-        explicit MessageJson(Json::Value json, types::MessageType messageType = types::MessageType::Success);
+        explicit MessageJson(const std::string &raw, types::ErrorNumber messageType = types::ErrorNumber::Success);
 
-        explicit MessageJson(const std::string &raw, types::MessageType messageType = types::MessageType::Success);
+        explicit MessageJson(int action, types::ErrorNumber messageType = types::ErrorNumber::Success);
 
-        explicit MessageJson(int action, types::MessageType messageType = types::MessageType::Success);
-
-        MessageJson &setMessageType(types::MessageType type);
+        MessageJson &setMessageType(types::ErrorNumber type);
 
         MessageJson &setAction(int action);
 

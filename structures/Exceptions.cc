@@ -49,7 +49,7 @@ MessageException::MessageException(
 ) : BaseException(std::move(message)), _reason(e.what()), _error(error) {}
 
 MessageJson MessageException::toJson() const noexcept {
-    return MessageJson(_error ? MessageType::Error : MessageType::Failed)
+    return MessageJson(_error ? ErrorNumber::Error : ErrorNumber::Failed)
             .setMessage(_message)
             .setReason(_reason);
 }

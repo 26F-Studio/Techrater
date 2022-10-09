@@ -28,13 +28,13 @@ void WebSocket::handleNewConnection(
         _connectionManager->subscribe(wsConnPtr);
     } catch (const orm::DrogonDbException &e) {
         LOG_ERROR << e.base().what();
-        MessageJson(MessageType::Error)
+        MessageJson(ErrorNumber::Error)
                 .setMessage(i18n("playerNotFound"))
                 .setReason(e.base().what())
                 .to(wsConnPtr);
     } catch (const exception &e) {
         LOG_ERROR << e.what();
-        MessageJson(MessageType::Error)
+        MessageJson(ErrorNumber::Error)
                 .setMessage(i18n("connectionFailed"))
                 .setReason(e.what())
                 .to(wsConnPtr);

@@ -33,7 +33,7 @@ namespace techmino::ws::v1 {
             using namespace techmino::types;
 
             if (!connectionFilter(wsConnPtr)) {
-                MessageJson(MessageType::Error)
+                MessageJson(ErrorNumber::Error)
                         .setMessage(I18nHelper<controllerImpl>::i18n("invalidConnection"))
                         .to(wsConnPtr);
                 return;
@@ -74,7 +74,7 @@ namespace techmino::ws::v1 {
             using namespace techmino::types;
 
             if (!request["action"].isInt()) {
-                MessageJson(MessageType::Failed)
+                MessageJson(ErrorNumber::Failed)
                         .setMessage(I18nHelper<controllerImpl>::i18n("invalidAction"))
                         .to(wsConnPtr);
             }

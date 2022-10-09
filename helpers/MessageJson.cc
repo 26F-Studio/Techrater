@@ -11,19 +11,16 @@ using namespace std;
 using namespace techmino::helpers;
 using namespace techmino::types;
 
-MessageJson::MessageJson(MessageType messageType) :
+MessageJson::MessageJson(ErrorNumber messageType) :
         BasicJson() { setMessageType(messageType); }
 
-MessageJson::MessageJson(Json::Value json, MessageType messageType) :
-        BasicJson(std::move(json)) { setMessageType(messageType); }
-
-MessageJson::MessageJson(const string &raw, MessageType messageType) :
+MessageJson::MessageJson(const string &raw, ErrorNumber messageType) :
         BasicJson(raw) { setMessageType(messageType); }
 
-MessageJson::MessageJson(int action, MessageType messageType) :
+MessageJson::MessageJson(int action, ErrorNumber messageType) :
         MessageJson(messageType) { setAction(action); }
 
-MessageJson &MessageJson::setMessageType(MessageType type) {
+MessageJson &MessageJson::setMessageType(ErrorNumber type) {
     _value["errno"] = enum_integer(type);
     return *this;
 }
@@ -62,7 +59,7 @@ MessageJson &MessageJson::setMessage(const string &message) {
 
 void MessageJson::to(const WebSocketConnectionPtr &connectionPtr) const {
     if (connectionPtr->connected()) {
-        if (enum_cast<MessageType>(_value["errno"].asInt()).value_or(MessageType::Success) == MessageType::Error) {
+        if (enum_cast<ErrorNumber>(_value["errno"].asInt()).value_or(ErrorNumber::Success) == ErrorNumber::Error) {
             connectionPtr->shutdown(CloseCode::kViolation, stringify());
         } else {
             connectionPtr->send(stringify());

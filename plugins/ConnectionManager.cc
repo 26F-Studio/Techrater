@@ -26,7 +26,7 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
         unique_lock<shared_mutex> lock(_sharedMutex);
         if (_connectionMap.contains(playerId) &&
             _connectionMap[playerId]->connected()) {
-            MessageJson(MessageType::Error)
+            MessageJson(ErrorNumber::Error)
                     .setMessage(i18n("connectionReplaced"))
                     .to(_connectionMap[playerId]);
         }

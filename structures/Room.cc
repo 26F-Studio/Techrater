@@ -7,7 +7,7 @@
 #include <structures/Player.h>
 #include <structures/Room.h>
 #include <types/Action.h>
-#include <types/MessageType.h>
+#include <types/ErrorNumber.h>
 #include <utils/crypto.h>
 
 

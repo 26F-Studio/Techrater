@@ -9,7 +9,7 @@
 #include <helpers/RequestJson.h>
 #include <helpers/ResponseJson.h>
 #include <types/JsonValue.h>
-#include <types/MessageType.h>
+#include <types/ErrorNumber.h>
 #include <types/ResultCode.h>
 
 namespace techmino::internal {

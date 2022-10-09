@@ -104,12 +104,12 @@ namespace techmino::structures {
                 e.toJson().setAction(action).to(wsConnPtr);
             } catch (const orm::DrogonDbException &e) {
                 LOG_ERROR << e.base().what();
-                MessageJson(action, MessageType::Error)
+                MessageJson(action, ErrorNumber::Error)
                         .setMessage(I18nHelper<T>::i18n("databaseError"))
                         .to(wsConnPtr);
             } catch (const exception &e) {
                 LOG_ERROR << e.what();
-                MessageJson(action, MessageType::Error)
+                MessageJson(action, ErrorNumber::Error)
                         .setMessage(I18nHelper<T>::i18n("internalError"))
                         .to(wsConnPtr);
             }
