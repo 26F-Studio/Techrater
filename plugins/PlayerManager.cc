@@ -144,10 +144,10 @@ string PlayerManager::seedEmail(const string &email) {
                 email
         ));
         return crypto::blake2B(to_string(player.getValueOfId()));
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "playerNotFound: " << email;
         throw ResponseException(
-                i18n("invalidEmail"),
+                i18n("playerNotFound"),
                 ResultCode::NotAcceptable,
                 k403Forbidden
         );
@@ -212,8 +212,8 @@ RedisToken PlayerManager::loginEmailPassword(const string &email, const string &
         }
 
         return _playerRedis->generateTokens(id);
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "invalidEmailPass: " << email;
         throw ResponseException(
                 i18n("invalidEmailPass"),
                 ResultCode::NotAcceptable,
@@ -239,8 +239,8 @@ void PlayerManager::resetEmail(
                 newPassword + crypto::blake2B(to_string(player.getValueOfId()))
         ));
         _playerMapper.update(player);
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "playerNotFound: " << email;
         throw ResponseException(
                 i18n("playerNotFound"),
                 ResultCode::NotFound,
@@ -250,14 +250,14 @@ void PlayerManager::resetEmail(
 }
 
 void PlayerManager::migrateEmail(
-        const int64_t userId,
+        const int64_t playerId,
         const string &newEmail,
         const string &code
 ) {
     _checkEmailCode(newEmail, code);
 
     try {
-        auto player = _playerMapper.findByPrimaryKey(userId);
+        auto player = _playerMapper.findByPrimaryKey(playerId);
         if (player.getValueOfEmail() == newEmail) {
             return;
         }
@@ -286,11 +286,11 @@ void PlayerManager::migrateEmail(
 
 
 void PlayerManager::deactivateEmail(
-        const int64_t userId,
+        const int64_t playerId,
         const string &code
 ) {
     try {
-        auto player = _playerMapper.findByPrimaryKey(userId);
+        auto player = _playerMapper.findByPrimaryKey(playerId);
         _checkEmailCode(player.getValueOfEmail(), code);
 
         _playerMapper.deleteOne(player);
@@ -304,8 +304,8 @@ void PlayerManager::deactivateEmail(
     }
 }
 
-string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
-    int64_t targetId = userId;
+string PlayerManager::getAvatar(const string &accessToken, int64_t playerId) {
+    int64_t targetId = playerId;
     NO_EXCEPTION(
             targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
@@ -316,8 +316,8 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
                 targetId
         ));
         return player.getValueOfAvatar();
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "playerNotFound: " << targetId;
         throw ResponseException(
                 i18n("playerNotFound"),
                 ResultCode::NotFound,
@@ -328,9 +328,9 @@ string PlayerManager::getAvatar(const string &accessToken, int64_t userId) {
 
 Json::Value PlayerManager::getPlayerInfo(
         const string &accessToken,
-        int64_t userId
+        int64_t playerId
 ) {
-    int64_t targetId = userId;
+    int64_t targetId = playerId;
     NO_EXCEPTION(
             targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
@@ -342,13 +342,13 @@ Json::Value PlayerManager::getPlayerInfo(
         )).toJson();
         player.removeMember("password_hash");
         player.removeMember("avatar");
-        if (userId > 0) {
+        if (playerId > 0) {
             player.removeMember("email");
             player.removeMember("phone");
         }
         return player;
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "playerNotFound: " << targetId;
         throw ResponseException(
                 i18n("playerNotFound"),
                 ResultCode::NotFound,
@@ -358,10 +358,10 @@ Json::Value PlayerManager::getPlayerInfo(
 }
 
 void PlayerManager::updatePlayerInfo(
-        int64_t userId,
+        int64_t playerId,
         RequestJson request
 ) {
-    auto player = _playerMapper.findByPrimaryKey(userId);
+    auto player = _playerMapper.findByPrimaryKey(playerId);
     if (player.getPasswordHash() == nullptr) {
         throw ResponseException(
                 i18n("noPassword"),
@@ -378,9 +378,9 @@ void PlayerManager::updatePlayerInfo(
 
 Json::Value PlayerManager::getPlayerData(
         const string &accessToken,
-        int64_t userId
+        int64_t playerId
 ) {
-    int64_t targetId = userId;
+    int64_t targetId = playerId;
     NO_EXCEPTION(
             targetId = _playerRedis->getIdByAccessToken(accessToken);
     )
@@ -390,7 +390,7 @@ Json::Value PlayerManager::getPlayerData(
                 orm::CompareOperator::EQ,
                 targetId
         )).toJson();
-        if (userId > 0) {
+        if (playerId > 0) {
             data.removeMember("settings");
             data.removeMember("keymaps");
             data.removeMember("touch_1");
@@ -398,8 +398,8 @@ Json::Value PlayerManager::getPlayerData(
             data.removeMember("touch_3");
         }
         return data;
-    } catch (const orm::UnexpectedRows &e) {
-        LOG_DEBUG << "Unexpected rows: " << e.what();
+    } catch (const orm::UnexpectedRows &) {
+        LOG_DEBUG << "playerNotFound: " << targetId;
         throw ResponseException(
                 i18n("playerNotFound"),
                 ResultCode::NotFound,
@@ -409,10 +409,10 @@ Json::Value PlayerManager::getPlayerData(
 }
 
 void PlayerManager::updatePlayerData(
-        int64_t userId,
+        int64_t playerId,
         RequestJson request
 ) {
-    auto data = _dataMapper.findByPrimaryKey(userId);
+    auto data = _dataMapper.findByPrimaryKey(playerId);
     data.updateByJson(request.ref());
     _dataMapper.update(data);
 }

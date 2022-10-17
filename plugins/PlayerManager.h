@@ -54,38 +54,38 @@ namespace techmino::plugins {
         );
 
         void migrateEmail(
-                int64_t userId,
+                int64_t playerId,
                 const std::string &newEmail,
                 const std::string &code
         );
 
         void deactivateEmail(
-                int64_t userId,
+                int64_t playerId,
                 const std::string &code
         );
 
         [[nodiscard]] std::string getAvatar(
                 const std::string &accessToken,
-                int64_t userId
+                int64_t playerId
         );
 
         [[nodiscard]] Json::Value getPlayerInfo(
                 const std::string &accessToken,
-                int64_t userId
+                int64_t playerId
         );
 
         void updatePlayerInfo(
-                int64_t userId,
+                int64_t playerId,
                 helpers::RequestJson request
         );
 
         [[nodiscard]] Json::Value getPlayerData(
                 const std::string &accessToken,
-                int64_t userId
+                int64_t playerId
         );
 
         void updatePlayerData(
-                int64_t userId,
+                int64_t playerId,
                 helpers::RequestJson request
         );
 

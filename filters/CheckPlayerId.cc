@@ -15,7 +15,7 @@ void CheckPlayerId::doFilter(
         FilterChainCallback &&nextCb
 ) {
     const auto &playerId = req->getParameter("playerId");
-    req->attributes()->insert("playerId", playerId.empty() ? -1 : stoll(playerId));
+    req->attributes()->insert("playerId", playerId.empty() ? -1 : stol(playerId));
     nextCb();
 }
 

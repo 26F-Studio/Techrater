@@ -504,7 +504,7 @@ Post
 
 ## API Group: `Player`
 
-### /avatar?id={playerId (Optional)}
+### /avatar?playerId={playerId (Optional)}
 
 #### Description
 
@@ -541,7 +541,7 @@ None
 }
 ```
 
-### /info?id={playerId (Optional in `Get`. Drop in `Put`)}
+### /info?playerId={playerId (Optional in `Get`. Drop in `Put`)}
 
 #### Description
 
@@ -611,7 +611,7 @@ None
 }
 ```
 
-### /data?id={playerId (Optional in `Get`. Drop in `Put`)}
+### /data?playerId={playerId (Optional in `Get`. Drop in `Put`)}
 
 #### Description
 
