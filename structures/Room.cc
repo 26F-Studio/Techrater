@@ -138,8 +138,8 @@ Json::Value Room::parse(bool details) const {
     result["roomId"] = roomId;
     result["capacity"] = capacity.load();
     result["state"] = string(enum_name(state.load()));
-    result["count"]["gamer"] = countGamer();
-    result["count"]["spectator"] = countSpectator();
+    result["count"]["Gamer"] = countGamer();
+    result["count"]["Spectator"] = countSpectator();
 
     {
         shared_lock<shared_mutex> dataLock(_dataMutex);

@@ -570,8 +570,8 @@ Create a room.
     "capacity": 2,
     "state": "Playing",
     "count": {
-      "gamer": 2,
-      "spectator": 2
+      "Gamer": 2,
+      "Spectator": 2
     },
     "private": false,
     "info": ANY_OBJECT,
