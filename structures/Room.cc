@@ -143,6 +143,7 @@ Json::Value Room::parse(bool details) const {
 
     {
         shared_lock<shared_mutex> dataLock(_dataMutex);
+        result["private"] = !_passwordHash.empty();
         result["info"] = _info.copy();
         if (details) {
             result["data"] = _data.copy();
