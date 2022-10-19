@@ -785,8 +785,8 @@ Join a room.
     "capacity": 2,
     "state": "Playing",
     "count": {
-      "gamer": 2,
-      "spectator": 2
+      "Gamer": 2,
+      "Spectator": 2
     },
     "private": false,
     "info": ANY_OBJECT,
@@ -997,8 +997,8 @@ The ***user*** who send the request
       "capacity": 2,
       "state": "Playing",
       "count": {
-        "gamer": 2,
-        "spectator": 2
+        "Gamer": 2,
+        "Spectator": 2
       },
       "info": ANY_OBJECT
     },
@@ -1007,8 +1007,8 @@ The ***user*** who send the request
       "capacity": 4,
       "state": "Standby",
       "count": {
-        "gamer": 3,
-        "spectator": 1
+        "Gamer": 3,
+        "Spectator": 1
       },
       "info": ANY_OBJECT
     },
@@ -1017,8 +1017,8 @@ The ***user*** who send the request
       "capacity": 5,
       "state": "Ready",
       "count": {
-        "gamer": 5,
-        "spectator": 10
+        "Gamer": 5,
+        "Spectator": 10
       },
       "info": ANY_OBJECT
     }

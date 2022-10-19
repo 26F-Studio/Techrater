@@ -27,10 +27,12 @@ Room::Room(
         Json::Value info,
         Json::Value data
 ) : capacity(capacity),
-    _passwordHash(crypto::blake2B(password)),
     _info(std::move(info)),
     _data(std::move(data)),
     _connectionManager(app().getPlugin<ConnectionManager>()) {
+    if (!password.empty()) {
+        _passwordHash = crypto::blake2B(password);
+    }
     _data.canSkip(true);
     _data.canOverwrite(true);
 }
@@ -59,7 +61,7 @@ Room::~Room() {
 
 bool Room::empty(bool all) const {
     if (all) {
-        shared_lock<shared_mutex> lock(_playerMutex);
+        shared_lock <shared_mutex> lock(_playerMutex);
         return _playerSet.empty();
     } else {
         return countGamer() == 0;
@@ -69,23 +71,27 @@ bool Room::empty(bool all) const {
 bool Room::full() const { return countGamer() >= capacity; }
 
 bool Room::checkPassword(const string &password) const {
-    shared_lock<shared_mutex> lock(_dataMutex);
+    shared_lock <shared_mutex> lock(_dataMutex);
     return crypto::blake2B(password) == _passwordHash;
 }
 
 void Room::updatePassword(const string &password) {
-    unique_lock<shared_mutex> lock(_dataMutex);
-    _passwordHash = crypto::blake2B(password);
+    unique_lock <shared_mutex> lock(_dataMutex);
+    if (password.empty()) {
+        _passwordHash.clear();
+    } else {
+        _passwordHash = crypto::blake2B(password);
+    }
 }
 
 void Room::subscribe(int64_t playerId) {
-    unique_lock<shared_mutex> lock(_playerMutex);
+    unique_lock <shared_mutex> lock(_playerMutex);
     _playerSet.insert(playerId);
 }
 
 void Room::unsubscribe(int64_t playerId) {
     {
-        unique_lock<shared_mutex> lock(_playerMutex);
+        unique_lock <shared_mutex> lock(_playerMutex);
         _playerSet.erase(playerId);
     }
     if (empty(true)) {
@@ -97,7 +103,7 @@ void Room::unsubscribe(int64_t playerId) {
 
 uint64_t Room::countPlaying() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
+    shared_lock <shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Gamer &&
@@ -110,7 +116,7 @@ uint64_t Room::countPlaying() const {
 
 uint64_t Room::countSpectator() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
+    shared_lock <shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Spectator) {
@@ -122,7 +128,7 @@ uint64_t Room::countSpectator() const {
 
 uint64_t Room::countStandby() const {
     uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
+    shared_lock <shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
         if (player->type == Player::Type::Gamer &&
@@ -142,7 +148,7 @@ Json::Value Room::parse(bool details) const {
     result["count"]["Spectator"] = countSpectator();
 
     {
-        shared_lock<shared_mutex> dataLock(_dataMutex);
+        shared_lock <shared_mutex> dataLock(_dataMutex);
         result["private"] = !_passwordHash.empty();
         result["info"] = _info.copy();
         if (details) {
@@ -154,7 +160,7 @@ Json::Value Room::parse(bool details) const {
         result["players"] = Json::arrayValue;
         result["chats"] = Json::arrayValue;
         {
-            shared_lock<shared_mutex> playerLock(_playerMutex);
+            shared_lock <shared_mutex> playerLock(_playerMutex);
             for (const auto playerId: _playerSet) {
                 result["players"].append(
                         _connectionManager->getConnPtr(playerId)->getContext<Player>()->info()
@@ -163,7 +169,7 @@ Json::Value Room::parse(bool details) const {
         }
 
         {
-            shared_lock<shared_mutex> lock(_chatMutex);
+            shared_lock <shared_mutex> lock(_chatMutex);
             for (const auto &chat: _chatList) {
                 result["chats"].append(chat);
             }
@@ -174,7 +180,7 @@ Json::Value Room::parse(bool details) const {
 }
 
 void Room::publish(const MessageJson &message, int64_t excludedId) {
-    shared_lock<shared_mutex> lock(_playerMutex);
+    shared_lock <shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         if (excludedId != playerId) {
             message.to(_connectionManager->getConnPtr(playerId));
@@ -183,12 +189,12 @@ void Room::publish(const MessageJson &message, int64_t excludedId) {
 }
 
 Json::Value Room::getData() const {
-    shared_lock<shared_mutex> lock(_dataMutex);
+    shared_lock <shared_mutex> lock(_dataMutex);
     return _data.copy();
 }
 
 Json::Value Room::updateData(const Json::Value &data) {
-    shared_lock<shared_mutex> lock(_dataMutex);
+    shared_lock <shared_mutex> lock(_dataMutex);
     for (const auto &item: data) {
         _data.modifyByPath(item["path"].asString(), item["value"]);
     }
@@ -196,12 +202,12 @@ Json::Value Room::updateData(const Json::Value &data) {
 }
 
 Json::Value Room::getInfo() const {
-    shared_lock<shared_mutex> lock(_dataMutex);
+    shared_lock <shared_mutex> lock(_dataMutex);
     return _info.copy();
 }
 
 Json::Value Room::updateInfo(const Json::Value &data) {
-    shared_lock<shared_mutex> lock(_dataMutex);
+    shared_lock <shared_mutex> lock(_dataMutex);
     for (const auto &item: data) {
         _info.modifyByPath(item["path"].asString(), item["value"]);
     }
@@ -209,7 +215,7 @@ Json::Value Room::updateInfo(const Json::Value &data) {
 }
 
 void Room::appendChat(Json::Value &&chat) {
-    unique_lock<shared_mutex> lock(_chatMutex);
+    unique_lock <shared_mutex> lock(_chatMutex);
     _chatList.push_back(std::move(chat));
 }
 
@@ -245,7 +251,7 @@ void Room::matchEnd(bool force) {
 
     state = State::Standby;
     {
-        shared_lock<shared_mutex> lock(_playerMutex);
+        shared_lock <shared_mutex> lock(_playerMutex);
         for (auto &playerId: _playerSet) {
             _connectionManager->getConnPtr(playerId)->getContext<Player>()->state = Player::State::Standby;
         }
@@ -257,7 +263,7 @@ void Room::matchEnd(bool force) {
 uint64_t Room::countGamer() const {
     uint64_t counter{};
     {
-        shared_lock<shared_mutex> lock(_playerMutex);
+        shared_lock <shared_mutex> lock(_playerMutex);
         for (const auto playerId: _playerSet) {
             const auto &player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
             if (player->type == Player::Type::Gamer) {
