@@ -230,6 +230,15 @@ void Room::matchStart(bool force) {
 
     startTimerId = app().getLoop()->runAfter(3, [this]() {
         state = State::Playing;
+        {
+            shared_lock<shared_mutex> lock(_playerMutex);
+            for (const auto playerId: _playerSet) {
+                const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+                if (player->type == Player::Type::Gamer) {
+                    player->state = Player::State::Playing;
+                }
+            }
+        }
         publish(MessageJson(enum_integer(Action::MatchStart)));
     });
 }
