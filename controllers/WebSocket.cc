@@ -42,6 +42,7 @@ void WebSocket::handleNewConnection(
 }
 
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
+//    NO_EXCEPTION(_connectionManager->unsubscribe(wsConnPtr);)
     wsConnPtr->forceClose();
 }
 

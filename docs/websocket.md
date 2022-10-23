@@ -211,7 +211,8 @@ All ***users*** in the room
 ```json
 {
   "action": ACTION_NUMBER,
-  "errno": 0
+  "errno": 0,
+  "data": 123456789
 }
 ```
 

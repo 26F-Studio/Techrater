@@ -42,7 +42,8 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
         } else {
             room = app().getPlugin<RoomManager>()->getRoom(request["roomId"].asString());
             if (room->checkPassword(request["password"].asString())) {
-                if (!room->full() && room->cancelStart()) {
+                if (!room->full()) {
+                    room->cancelStart();
                     player->type = Player::Type::Gamer;
                 }
                 player->setRoom(room);

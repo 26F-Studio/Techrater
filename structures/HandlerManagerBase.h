@@ -35,6 +35,8 @@ namespace techmino::structures {
                 MessageJson(action, ErrorNumber::Failed)
                         .setMessage(I18nHelper<T>::i18n("invalidArguments"))
                         .to(wsConnPtr);
+            } catch (const structures::MessageException &e) {
+                e.toJson().to(wsConnPtr);
             }
         }
 

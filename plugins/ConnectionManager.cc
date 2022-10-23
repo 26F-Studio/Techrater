@@ -66,6 +66,7 @@ WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t userId) {
         const auto &wsConnPtr = _connectionMap.at(userId);
         if (!wsConnPtr->connected() ||
             !wsConnPtr->getContext<PlayerBase>()) {
+            lock.unlock();
             unsubscribe(wsConnPtr);
             throw MessageException(i18n("playerInvalid"));
         }
