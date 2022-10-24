@@ -36,6 +36,8 @@ void PlayerConfig::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson 
             data["playerId"] = player->playerId;
             data["config"] = request.ref().asString();
             player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
+        } else {
+            MessageJson(_action).setData(request.ref().asString()).to(wsConnPtr);
         }
     }, _action, wsConnPtr);
 }

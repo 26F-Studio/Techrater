@@ -103,7 +103,7 @@ void Room::unsubscribe(int64_t playerId) {
     }
     if (empty(true)) {
         app().getPlugin<RoomManager>()->removeRoom(roomId);
-    } else if (empty()) {
+    } else {
         matchEnd();
     }
 }
@@ -285,7 +285,7 @@ bool Room::cancelStart() {
 
 void Room::matchEnd(bool force) {
     if (state != State::Playing ||
-        (!force && countPlaying() > 0)) {
+        (!force && countPlaying() > 1)) {
         return;
     }
 

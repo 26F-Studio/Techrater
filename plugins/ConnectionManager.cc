@@ -36,7 +36,7 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
 
 void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr) {
     const auto &player = wsConnPtr->getContext<PlayerBase>();
-    if (wsConnPtr->connected() && player) {
+    if (player) {
         try {
             unique_lock<shared_mutex> lock(_sharedMutex);
             if (_connectionMap.at(player->playerId) == wsConnPtr) {

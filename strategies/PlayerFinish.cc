@@ -4,7 +4,6 @@
 
 #include <helpers/MessageJson.h>
 #include <magic_enum.hpp>
-#include <plugins/RoomManager.h>
 #include <strategies/PlayerFinish.h>
 #include <structures/Player.h>
 #include <types/Action.h>

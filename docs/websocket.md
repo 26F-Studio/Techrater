@@ -61,6 +61,9 @@ enum class ErrorNumber {
 
 ```c++
 enum class Action {
+    /// Global actions
+    GlobalOnlineCount = 1000,
+    
     /// Game actions
     MatchEnd = 1100,
     MatchReady,
@@ -138,13 +141,45 @@ enum class Role {
 };
 ```
 
-## Game Actions
+## 10xx Global Actions
 
-### 1100 Game End
+### 1100 Global Online Count
 
 #### Description
 
-Indicate that game has ended.
+Get online player count.
+
+#### Request
+
+```json
+{
+  "action": 1000
+}
+```
+
+#### Response
+
+##### Targets
+
+The ***user*** who send the request
+
+##### Message
+
+```json
+{
+  "action": 1000,
+  "errno": 0,
+  "data": 114
+}
+```
+
+## 11xx Match Actions
+
+### 1100 Match End
+
+#### Description
+
+Indicate that match has ended.
 
 #### Request
 
@@ -160,12 +195,12 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1100,
   "errno": 0
 }
 ```
 
-### 1101 Game Ready
+### 1101 Match  Ready
 
 #### Description
 
@@ -185,16 +220,16 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1101,
   "errno": 0
 }
 ```
 
-### 1102 Game Start
+### 1102 Match Start
 
 #### Description
 
-Indicate that game has started.
+Indicate that match has started.
 
 #### Request
 
@@ -210,25 +245,26 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1102,
   "errno": 0,
   "data": 123456789
 }
 ```
 
-## Player Actions
+## 12xx Player Actions
 
 ### 1200 Player Config
 
 #### Description
 
-Notify other players that local player config has changed.
+Update current player's config.
+If in a room, notify other players that local player config has changed.
 
 #### Request
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1200,
   // Base64 encoded config object
   "data": "BASE64_STRING"
 }
@@ -238,13 +274,26 @@ Notify other players that local player config has changed.
 
 ##### Targets
 
-All ***users*** in the room
+- The ***user*** who sent the request
+- If in a room, notify all ***users*** in the room
 
 ##### Message
 
+- To the user who sent the request
+
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1200,
+  "errno": 0,
+  "data": "BASE64_STRING"
+}
+```
+
+- To all users in the room
+
+```json
+{
+  "action": 1200,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -263,9 +312,11 @@ Notify other players that local player has finished the game.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1201,
   // Data of the current game
-  "data": ANY_OBJECT
+  "data": {
+    "foo": "bar"
+  }
 }
 ```
 
@@ -279,11 +330,13 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1201,
   "errno": 0,
   "data": {
     "playerId": 123,
-    "data": ANY_OBJECT
+    "data": {
+      "foo": "bar"
+    }
   }
 }
 ```
@@ -298,8 +351,9 @@ Notify other players that local player has changed the group.
 
 ```json
 {
-  "action": ACTION_NUMBER,
-  "data": GROUP_NUMBER
+  "action": 1202,
+  // Group number
+  "data": 2
 }
 ```
 
@@ -313,11 +367,11 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1202,
   "errno": 0,
   "data": {
     "playerId": 123,
-    "group": GROUP_NUMBER
+    "group": 2
   }
 }
 ```
@@ -332,8 +386,8 @@ Notify other players that local player has changed the ready state.
 
 ```json
 {
-  "action": ACTION_NUMBER,
-  // True for ready, false for cancel
+  "action": 1203,
+  // True for ready, false for standby
   "data": true
 }
 ```
@@ -348,7 +402,7 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1203,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -369,7 +423,7 @@ If current player's role is equal to the requesting role, current player's role 
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1204,
   "data": {
     "playerId": 111,
     "role": "Admin"
@@ -387,17 +441,20 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1204,
   "errno": 0,
   "data": {
     "playerId": 111,
     "role": "Admin"
   }
 }
+```
 
-// Below would also be sent if swap happens
+> Below would also be sent if swap happens
+
+```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1204,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -416,7 +473,7 @@ Notify other players that local player has changed the custom playing state.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1205,
   // Custom state string
   "data": "ANY_STRING"
 }
@@ -432,7 +489,7 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1205,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -451,7 +508,7 @@ Stream game playing data.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1206,
   // Base64 string data
   "data": "BASE64_STRING"
 }
@@ -467,7 +524,7 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1206,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -488,7 +545,7 @@ If the room is full, the player can't change from `Spectator` to `Gamer`.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1207,
   // 'Spectator' or 'Gamer'
   "data": "Gamer"
 }
@@ -504,7 +561,7 @@ All ***users*** in the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1207,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -513,7 +570,7 @@ All ***users*** in the room
 }
 ```
 
-## Room Actions
+## 13xx Room Actions
 
 ### 1300 Room Chat
 
@@ -526,7 +583,7 @@ room.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1300,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING",
@@ -545,7 +602,7 @@ All ***users*** in the specific room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1300,
   "errno": 0,
   "data": {
     "playerId": 123,
@@ -564,21 +621,18 @@ Create a room.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1301,
   "errno": 0,
   "data": {
-    "roomId": "HEX_STRING",
     "capacity": 2,
-    "state": "Playing",
-    "count": {
-      "Gamer": 2,
-      "Spectator": 2
+    "info": {
+      "foo": "bar"
     },
-    "private": false,
-    "info": ANY_OBJECT,
-    "data": ANY_OBJECT,
-    "players": [],
-    "chats": []
+    "data": {
+      "foo": "bar"
+    },
+    // Optional.
+    "password": "114514"
   }
 }
 ```
@@ -593,10 +647,36 @@ The ***user*** who created the room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1301,
   "errno": 0,
-  // Room ID
-  "data": "HEX_STRING"
+  "data": {
+    "roomId": "HEX_STRING",
+    "capacity": 2,
+    "state": "Standby",
+    "count": {
+      "Gamer": 1,
+      "Spectator": 0
+    },
+    "private": true,
+    "info": {
+      "foo": "bar"
+    },
+    "data": {
+      "foo": "bar"
+    },
+    "players": [
+      {
+        "playerId": 11,
+        "group": 1,
+        "role": "Admin",
+        "type": "Gamer",
+        "state": "Playing",
+        "config": "BASE64_STRING",
+        "history": ""
+      }
+    ],
+    "chats": []
+  }
 }
 ```
 
@@ -610,7 +690,7 @@ Access current room's data. Can access other room's data by specifying `roomId` 
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1302,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING"
@@ -628,10 +708,12 @@ The ***user*** who send the request
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1302,
   "errno": 0,
   // Room data
-  "data": ANY_OBJECT
+  "data": {
+    "foo": "bar"
+  }
 }
 ```
 
@@ -646,11 +728,16 @@ global admin.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1303,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING",
-    "data": UPDATE_ARRAY
+    "data": [
+      {
+        "path": "foo.bar",
+        "data": "demo"
+      }
+    ]
   }
 }
 ```
@@ -665,11 +752,15 @@ All ***users*** in the specific room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1303,
   "errno": 0,
   "data": {
     "playerId": 11,
-    "data": ANY_OBJECT
+    "data": {
+      "foo": {
+        "bar": "demo"
+      }
+    }
   }
 }
 ```
@@ -684,7 +775,7 @@ Access current room's data. Can access other room's data by specifying `roomId`.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1304,
   "data": {
     // Optional.
     "roomId": "HEX_STRING"
@@ -702,10 +793,12 @@ The ***user*** who send the request
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1304,
   "errno": 0,
   // Room info
-  "data": ANY_OBJECT
+  "data": {
+    "foo": "bar"
+  }
 }
 ```
 
@@ -720,11 +813,18 @@ global admin.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1305,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING",
-    "info": UPDATE_ARRAY
+    "info": [
+      {
+        "path": "foo.0.bar",
+        "data": {
+          "demo": true
+        }
+      }
+    ]
   }
 }
 ```
@@ -739,11 +839,19 @@ All ***users*** in the specific room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1305,
   "errno": 0,
   "data": {
     "playerId": 11,
-    "info": ANY_OBJECT
+    "info": {
+      "foo": [
+        {
+          "bar": {
+            "demo": true
+          }
+        }
+      ]
+    }
   }
 }
 ```
@@ -758,7 +866,7 @@ Join a room.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1306,
   "data": {
     "roomId": "HEX_STRING",
     // Optional.
@@ -776,10 +884,11 @@ Join a room.
 
 ##### Message
 
+- To the user who joined the room
+
 ```json
-// To the user who joined the room
 {
-  "action": ACTION_NUMBER,
+  "action": 1306,
   "errno": 0,
   "data": {
     "roomId": "HEX_STRING",
@@ -790,8 +899,12 @@ Join a room.
       "Spectator": 2
     },
     "private": false,
-    "info": ANY_OBJECT,
-    "data": ANY_OBJECT,
+    "info": {
+      "foo": "bar"
+    },
+    "data": {
+      "foo": "bar"
+    },
     "players": [
       {
         "playerId": 11,
@@ -852,10 +965,13 @@ Join a room.
     ]
   }
 }
+```
 
-// To other users in the room
+- To other users in the room
+
+```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1306,
   "errno": 0,
   // Joined player's info
   "data": {
@@ -881,7 +997,7 @@ player is global admin.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1307,
   "data": {
     // Optional.
     "roomId": "HEX_STRING",
@@ -899,20 +1015,24 @@ player is global admin.
 
 ##### Message
 
+- To the user who's been kicked
+
 ```json
-// To the user who was kicked
 {
-  "action": ACTION_NUMBER,
+  "action": 1307,
   "errno": 0,
   "data": {
     "executorId": 11,
     "playerId": 13
   }
 }
+```
 
-// To other users in the room
+- To other users in the room
+
+```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1307,
   "errno": 0,
   "data": {
     "executorId": 11,
@@ -931,7 +1051,7 @@ Leave current room.
 
 ```json
 {
-  "action": ACTION_NUMBER
+  "action": 1308
 }
 ```
 
@@ -944,16 +1064,20 @@ Leave current room.
 
 ##### Message
 
+- To the user who leaves the room
+
 ```json
-// To the user who leaves the room
 {
-  "action": ACTION_NUMBER,
+  "action": 1308,
   "errno": 0
 }
+```
 
-// To other users in the room
+- To other users in the room
+
+```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1308,
   "errno": 0,
   "data": {
     "playerId": 11
@@ -971,7 +1095,7 @@ List rooms according to `pageIndex` and `pageSize`.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1309,
   // Optional
   "data": {
     "pageIndex": 2,
@@ -990,7 +1114,7 @@ The ***user*** who send the request
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1309,
   "errno": 0,
   "data": [
     {
@@ -1001,7 +1125,9 @@ The ***user*** who send the request
         "Gamer": 2,
         "Spectator": 2
       },
-      "info": ANY_OBJECT
+      "info": {
+        "foo": "bar"
+      }
     },
     {
       "roomId": "HEX_STRING",
@@ -1011,7 +1137,9 @@ The ***user*** who send the request
         "Gamer": 3,
         "Spectator": 1
       },
-      "info": ANY_OBJECT
+      "info": {
+        "foo": "bar"
+      }
     },
     {
       "roomId": "HEX_STRING",
@@ -1021,7 +1149,9 @@ The ***user*** who send the request
         "Gamer": 5,
         "Spectator": 10
       },
-      "info": ANY_OBJECT
+      "info": {
+        "foo": "bar"
+      }
     }
   ]
 }
@@ -1038,7 +1168,7 @@ player is global admin.
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1310,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING",
@@ -1057,7 +1187,7 @@ All ***users*** in the specific room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1310,
   "errno": 0,
   "data": {
     "playerId": 11,
@@ -1076,7 +1206,7 @@ Remove current room, need to be the room admin. Can remove other room by specify
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1311,
   "data": {
     // Optional. Need permission to set roomId
     "roomId": "HEX_STRING"
@@ -1088,26 +1218,25 @@ Remove current room, need to be the room admin. Can remove other room by specify
 
 ##### Targets
 
-- Executor
+- The request executor
 - All ***users*** in the specific room
 
 ##### Message
 
-- Executor
+- To the executor
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1311,
   "errno": 0
 }
 ```
 
-- All ***users*** in the specific room
+- To all ***users*** in the specific room
 
 ```json
 {
-  "action": ACTION_NUMBER,
+  "action": 1311,
   "errno": 0
 }
 ```
-
