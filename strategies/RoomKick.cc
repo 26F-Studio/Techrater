@@ -73,11 +73,5 @@ void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
 
         target->reset();
         message.to(targetConnPtr);
-
-        if (room->empty()) {
-            roomManager->removeRoom(room->roomId);
-        } else {
-            room->matchEnd();
-        }
     }, _action, wsConnPtr);
 }
