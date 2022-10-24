@@ -66,8 +66,6 @@ namespace techmino::structures {
 
         [[nodiscard]] uint64_t countSpectator() const;
 
-        [[nodiscard]] uint64_t countStandby() const;
-
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
         void publish(const helpers::MessageJson &message, int64_t excludedId = -1);
@@ -88,9 +86,10 @@ namespace techmino::structures {
 
         void matchEnd(bool force = false);
 
-
     private:
         [[nodiscard]] uint64_t countGamer() const;
+
+        [[nodiscard]] uint64_t countStandby() const;
 
     public:
         const std::string roomId{drogon::utils::getUuid()};

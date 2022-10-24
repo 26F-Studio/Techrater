@@ -141,23 +141,6 @@ uint64_t Room::countSpectator() const {
     return counter;
 }
 
-uint64_t Room::countStandby() const {
-    uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer &&
-                player->state == Player::State::Standby) {
-                counter++;
-            }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
-        }
-    }
-    return counter;
-}
-
 Json::Value Room::parse(bool details) const {
     Json::Value result;
     result["roomId"] = roomId;
@@ -317,6 +300,23 @@ uint64_t Room::countGamer() const {
             } catch (const structures::MessageException &) {
                 LOG_WARN << "Player " << playerId << " not found";
             }
+        }
+    }
+    return counter;
+}
+
+uint64_t Room::countStandby() const {
+    uint64_t counter{};
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        try {
+            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            if (player->type == Player::Type::Gamer &&
+                player->state == Player::State::Standby) {
+                counter++;
+            }
+        } catch (const structures::MessageException &) {
+            LOG_WARN << "Player " << playerId << " not found";
         }
     }
     return counter;

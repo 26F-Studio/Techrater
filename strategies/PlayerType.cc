@@ -50,7 +50,14 @@ void PlayerType::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         data["playerId"] = player->playerId;
         data["type"] = request.ref().asString();
 
-        player->type = enum_cast<Player::Type>(request.ref().asString()).value();
-        player->getRoom()->publish(MessageJson(_action).setData(std::move(data)));
+        const auto type = enum_cast<Player::Type>(request.ref().asString()).value();
+        player->type = type;
+        auto room = player->getRoom();
+        room->publish(MessageJson(_action).setData(std::move(data)));
+        if (type == Player::Type::Spectator) {
+            room->matchStart();
+        } else {
+            room->cancelStart();
+        }
     }, _action, wsConnPtr);
 }
