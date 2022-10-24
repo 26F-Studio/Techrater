@@ -1,0 +1,254 @@
+{
+  "Techrater": {
+    // Controllers
+    "Auth": {
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "Notice": {
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "Player": {
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "WebSocket": {
+      "invalidConnection": "Invalid connection",
+      "invalidAction": "Invalid action",
+      "playerNotFound": "Player not found",
+      "connectionFailed": "Connection failed"
+    },
+    // Filters
+    "AuthDeactivateEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "AuthLoginEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "AuthMigrateEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "AuthResetEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "AuthSeedEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "AuthVerifyEmail": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "CheckAccessToken": {
+      "invalidArguments": "Invalid arguments"
+    },
+    "CheckPermission": {
+      "noPermission": "No permission",
+      "playerNotFound": "Player not found"
+    },
+    "CheckRefreshToken": {
+      "invalidArguments": "Invalid arguments"
+    },
+    "LimitEmail": {
+      "tooFrequent": "Too frequent",
+      "internalError": "Internal error"
+    },
+    "LimitIp": {
+      "tooFrequent": "Too frequent",
+      "internalError": "Internal error"
+    },
+    "NoticeCreate": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "NoticeRetrieve": {
+      "invalidArguments": "Invalid arguments"
+    },
+    "NoticeUpdate": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "PlayerUpdateData": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    "PlayerUpdateInfo": {
+      "invalidFormat": "Invalid json format",
+      "invalidArguments": "Invalid json types",
+      "internalError": "Internal error"
+    },
+    // Plugins
+    "ConnectionManager": {
+      "playerInvalid": "Player invalid",
+      "playerNotFound": "Player not found",
+      "connectionReplaced": "Connection replaced"
+    },
+    "HandlerManager": {
+      "invalidArguments": "Invalid arguments"
+    },
+    "NoticeManager": {
+      "noticeNotFound": "Notice not found"
+    },
+    "PlayerManager": {
+      "invalidCode": "Invalid code",
+      "invalidEmail": "Invalid email",
+      "invalidAccessToken": "Invalid access token",
+      "playerNotFound": "Player not found",
+      "noPassword": "No password",
+      "invalidEmailPass": "Invalid email or password",
+      "emailExists": "Email exists",
+      "invalidRefreshToken": "Invalid refresh token",
+      "emailSendError": "Email send error"
+    },
+    "RoomManager": {
+      "roomNotFound": "Room not found"
+    },
+    // Strategies
+    "GlobalOnlineCount": {
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerConfig": {
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerFinish": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerGroup": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerReady": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerRole": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "invalidRole": "Invalid role",
+      "noPermission": "No permission",
+      "invalidTarget": "Invalid target",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerState": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerStream": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "PlayerType": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "invalidType": "Invalid type",
+      "roomFull": "Room full",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomChat": {
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomCreate": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomDataGet": {
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomDataUpdate": {
+      "notAvailable": "Not available",
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomInfoGet": {
+      "roomNotFound": "Room not found",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomInfoUpdate": {
+      "notAvailable": "Not available",
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomJoin": {
+      "notAvailable": "Not available",
+      "invalidArguments": "Invalid arguments",
+      "wrongPassword": "Wrong password",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomKick": {
+      "invalidArguments": "Invalid arguments",
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomLeave": {
+      "notAvailable": "Not available",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomList": {
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomPassword": {
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "invalidArguments": "Invalid arguments",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    },
+    "RoomRemove": {
+      "noPermission": "No permission",
+      "roomNotFound": "Room not found",
+      "databaseError": "Database error",
+      "internalError": "Internal error"
+    }
+  }
+}
