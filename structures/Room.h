@@ -62,10 +62,6 @@ namespace techmino::structures {
 
         void unsubscribe(int64_t userId);
 
-        [[nodiscard]] uint64_t countPlaying() const;
-
-        [[nodiscard]] uint64_t countSpectator() const;
-
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
         void publish(const helpers::MessageJson &message, int64_t excludedId = -1);
@@ -80,16 +76,20 @@ namespace techmino::structures {
 
         void appendChat(Json::Value &&chat);
 
-        void matchStart(bool force = false);
+        void matchTryStart(bool force = false);
 
         bool cancelStart();
 
-        void matchEnd(bool force = false);
+        void matchTryEnd(bool force = false);
 
     private:
         [[nodiscard]] uint64_t countGamer() const;
 
-        [[nodiscard]] uint64_t countStandby() const;
+        [[nodiscard]] uint64_t countSpectator() const;
+
+        [[nodiscard]] uint64_t countPlaying() const;
+
+        [[nodiscard]] bool isAllReady() const;
 
     public:
         const std::string roomId{drogon::utils::getUuid()};

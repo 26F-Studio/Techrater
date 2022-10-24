@@ -37,8 +37,9 @@ optional<string> RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, Reque
         }
     } else if (player->getRoom()) {
         /// @note Reject if the player's role is lower than the target.
-        if (player->role <
-            app().getPlugin<ConnectionManager>()->getConnPtr(request.ref().asInt64())->getContext<Player>()->role) {
+        if (player->role < app().getPlugin<ConnectionManager>()->getConnPtr(
+                request["playerId"].asInt64()
+        )->getContext<Player>()->role) {
             return i18n("noPermission");
         }
     } else {

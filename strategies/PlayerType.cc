@@ -55,7 +55,7 @@ void PlayerType::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         auto room = player->getRoom();
         room->publish(MessageJson(_action).setData(std::move(data)));
         if (type == Player::Type::Spectator) {
-            room->matchStart();
+            room->matchTryStart();
         } else {
             room->cancelStart();
         }

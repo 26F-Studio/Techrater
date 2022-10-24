@@ -26,9 +26,9 @@ namespace techmino::plugins {
 
         void subscribe(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
-        void unsubscribe(const drogon::WebSocketConnectionPtr &wsConnPtr);
+        void unsubscribe(int64_t playerId);
 
-        drogon::WebSocketConnectionPtr getConnPtr(int64_t userId);
+        drogon::WebSocketConnectionPtr getConnPtr(int64_t playerId);
 
         uint64_t count() const;
 

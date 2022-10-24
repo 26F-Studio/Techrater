@@ -3,6 +3,7 @@
 //
 
 #include <plugins/ConnectionManager.h>
+#include <structures/ExceptionHandlers.h>
 #include <structures/Exceptions.h>
 #include <structures/PlayerBase.h>
 
@@ -23,51 +24,40 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     const auto &player = wsConnPtr->getContext<PlayerBase>();
     if (wsConnPtr->connected() && player) {
         const auto playerId = player->playerId;
-        unique_lock<shared_mutex> lock(_sharedMutex);
-        if (_connectionMap.contains(playerId) &&
-            _connectionMap[playerId]->connected()) {
-            MessageJson(ErrorNumber::Error)
-                    .setMessage(i18n("connectionReplaced"))
-                    .to(_connectionMap[playerId]);
-        }
-        _connectionMap[playerId] = wsConnPtr;
-    }
-}
-
-void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr) {
-    const auto &player = wsConnPtr->getContext<PlayerBase>();
-    if (player) {
-        try {
+        unsubscribe(playerId);
+        {
             unique_lock<shared_mutex> lock(_sharedMutex);
-            if (_connectionMap.at(player->playerId) == wsConnPtr) {
-                _connectionMap.erase(player->playerId);
-            } else {
-                LOG_DEBUG << "Unsubscribe failed, not same connection: \n"
-                          << "\tOriginal: (local: "
-                          << _connectionMap.at(player->playerId)->localAddr().toIpPort()
-                          << ", remote: "
-                          << _connectionMap.at(player->playerId)->peerAddr().toIpPort()
-                          << ")\n"
-                          << "\tCurrent: (local: "
-                          << wsConnPtr->localAddr().toIpPort()
-                          << ", remote: "
-                          << wsConnPtr->peerAddr().toIpPort()
-                          << ")";
-            }
-        } catch (const out_of_range &e) {
-            throw MessageException(i18n("playerNotFound"), e);
+            _connectionMap[playerId] = wsConnPtr;
         }
     }
 }
 
-WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t userId) {
+void ConnectionManager::unsubscribe(int64_t playerId) {
+    NO_EXCEPTION(
+            {
+                shared_lock<shared_mutex> lock(_sharedMutex);
+                if (_connectionMap.at(playerId)->connected()) {
+                    MessageJson(ErrorNumber::Error)
+                            .setMessage(i18n("connectionReplaced"))
+                            .to(_connectionMap.at(playerId));
+                } else {
+                    _connectionMap.at(playerId)->forceClose();
+                }
+            }
+            {
+                unique_lock<shared_mutex> lock(_sharedMutex);
+                _connectionMap.erase(playerId);
+            }
+    )
+}
+
+WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t playerId) {
     try {
         shared_lock<shared_mutex> lock(_sharedMutex);
-        const auto &wsConnPtr = _connectionMap.at(userId);
-        if (!wsConnPtr->connected() ||
-            !wsConnPtr->getContext<PlayerBase>()) {
+        const auto &wsConnPtr = _connectionMap.at(playerId);
+        if (!wsConnPtr->connected() || !wsConnPtr->getContext<PlayerBase>()) {
             lock.unlock();
-            unsubscribe(wsConnPtr);
+            unsubscribe(playerId);
             throw MessageException(i18n("playerInvalid"));
         }
         return wsConnPtr;

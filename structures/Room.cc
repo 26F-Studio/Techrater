@@ -51,7 +51,7 @@ Room::Room(Room &&room) noexcept:
 
 Room::~Room() {
     cancelStart();
-    matchEnd(true);
+    matchTryEnd(true);
     for (const auto playerId: _playerSet) {
         try {
             const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
@@ -92,8 +92,11 @@ void Room::updatePassword(const string &password) {
 }
 
 void Room::subscribe(int64_t playerId) {
-    unique_lock<shared_mutex> lock(_playerMutex);
-    _playerSet.insert(playerId);
+    {
+        unique_lock<shared_mutex> lock(_playerMutex);
+        _playerSet.insert(playerId);
+    }
+    cancelStart();
 }
 
 void Room::unsubscribe(int64_t playerId) {
@@ -104,41 +107,9 @@ void Room::unsubscribe(int64_t playerId) {
     if (empty(true)) {
         app().getPlugin<RoomManager>()->removeRoom(roomId);
     } else {
-        matchEnd();
+        matchTryStart();
+        matchTryEnd();
     }
-}
-
-uint64_t Room::countPlaying() const {
-    uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer &&
-                player->state == Player::State::Playing) {
-                counter++;
-            }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
-        }
-    }
-    return counter;
-}
-
-uint64_t Room::countSpectator() const {
-    uint64_t counter{};
-    shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Spectator) {
-                counter++;
-            }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
-        }
-    }
-    return counter;
 }
 
 Json::Value Room::parse(bool details) const {
@@ -229,9 +200,8 @@ void Room::appendChat(Json::Value &&chat) {
     _chatList.push_back(std::move(chat));
 }
 
-void Room::matchStart(bool force) {
-    if (state != State::Standby ||
-        (!force && countStandby() > 0)) {
+void Room::matchTryStart(bool force) {
+    if (!(state == State::Standby && (force || isAllReady()))) {
         return;
     }
 
@@ -266,7 +236,7 @@ bool Room::cancelStart() {
     return false;
 }
 
-void Room::matchEnd(bool force) {
+void Room::matchTryEnd(bool force) {
     if (state != State::Playing ||
         (!force && countPlaying() > 1)) {
         return;
@@ -305,14 +275,13 @@ uint64_t Room::countGamer() const {
     return counter;
 }
 
-uint64_t Room::countStandby() const {
+uint64_t Room::countSpectator() const {
     uint64_t counter{};
     shared_lock<shared_mutex> lock(_playerMutex);
     for (const auto playerId: _playerSet) {
         try {
             const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer &&
-                player->state == Player::State::Standby) {
+            if (player->type == Player::Type::Spectator) {
                 counter++;
             }
         } catch (const structures::MessageException &) {
@@ -320,4 +289,41 @@ uint64_t Room::countStandby() const {
         }
     }
     return counter;
+}
+
+uint64_t Room::countPlaying() const {
+    uint64_t counter{};
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        try {
+            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            if (player->type == Player::Type::Gamer &&
+                player->state == Player::State::Playing) {
+                counter++;
+            }
+        } catch (const structures::MessageException &) {
+            LOG_WARN << "Player " << playerId << " not found";
+        }
+    }
+    return counter;
+}
+
+bool Room::isAllReady() const {
+    bool hasGamer = false;
+    shared_lock<shared_mutex> lock(_playerMutex);
+    for (const auto playerId: _playerSet) {
+        try {
+            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            if (player->type == Player::Type::Gamer) {
+                if (player->state != Player::State::Ready) {
+                    return false;
+                } else if (!hasGamer) {
+                    hasGamer = true;
+                }
+            }
+        } catch (const structures::MessageException &) {
+            LOG_WARN << "Player " << playerId << " not found";
+        }
+    }
+    return hasGamer;
 }
