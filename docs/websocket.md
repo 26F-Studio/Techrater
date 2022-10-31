@@ -143,7 +143,7 @@ enum class Role {
 
 ## 10xx Global Actions
 
-### 1100 Global Online Count
+### 1000 Global Online Count
 
 #### Description
 
