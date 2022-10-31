@@ -57,7 +57,7 @@ void PlayerType::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
         if (type == Player::Type::Spectator) {
             room->matchTryStart();
         } else {
-            room->cancelStart();
+            room->matchCancelStart();
         }
     }, _action, wsConnPtr);
 }

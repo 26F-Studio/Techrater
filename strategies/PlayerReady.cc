@@ -49,7 +49,7 @@ void PlayerReady::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &
         if (isReady) {
             room->matchTryStart();
         } else {
-            room->cancelStart();
+            room->matchCancelStart();
         }
     }, _action, wsConnPtr);
 }

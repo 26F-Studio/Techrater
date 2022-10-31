@@ -10,6 +10,7 @@
 #include <helpers/MessageJson.h>
 #include <helpers/RequestJson.h>
 #include <plugins/ConnectionManager.h>
+#include <structures/PlayerBase.h>
 
 namespace techmino::structures {
     /**
@@ -33,6 +34,59 @@ namespace techmino::structures {
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
     public:
+        class Member : public PlayerBase {
+        public:
+            enum class Role {
+                Normal,
+                Admin,
+                Super,
+            };
+            enum class State {
+                Standby,
+                Ready,
+                Playing,
+                Finished,
+            };
+            enum class Type {
+                Gamer,
+                Spectator,
+            };
+
+        public:
+            explicit Member(
+                    int64_t playerId,
+                    Role role = Role::Normal,
+                    State state = State::Standby,
+                    Type type = Type::Spectator
+            );
+
+            Member(Member &&member) noexcept;
+
+            void setConfig(std::string &&config);
+
+            bool hasConfig() const;
+
+            void setCustomState(std::string &&customState);
+
+            void appendHistory(const std::string &history);
+
+            [[nodiscard]] std::string history() const;
+
+            [[nodiscard]] Json::Value info() const;
+
+            void reset();
+
+        public:
+            std::atomic<uint64_t> group{0};
+            std::atomic<Role> role;
+            std::atomic<State> state;
+            std::atomic<Type> type;
+
+        private:
+            mutable std::shared_mutex _dataMutex, _historyMutex;
+            std::string _config, _customState, _history;
+        };
+
         enum class State {
             Playing,
             Ready,
@@ -58,7 +112,7 @@ namespace techmino::structures {
 
         void updatePassword(const std::string &password);
 
-        void subscribe(int64_t userId);
+        void subscribe(Member &&member);
 
         void unsubscribe(int64_t userId);
 
@@ -78,7 +132,7 @@ namespace techmino::structures {
 
         void matchTryStart(bool force = false);
 
-        bool cancelStart();
+        bool matchCancelStart();
 
         void matchTryEnd(bool force = false);
 
@@ -101,7 +155,7 @@ namespace techmino::structures {
         plugins::ConnectionManager *_connectionManager;
         std::string _passwordHash;
         helpers::DataJson _info, _data;
-        std::unordered_set<int64_t> _playerSet;
+        std::unordered_map<int64_t, Member> _memberMap;
         std::vector<Json::Value> _chatList;
     };
 }

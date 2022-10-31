@@ -21,6 +21,90 @@ using namespace techmino::types;
 using namespace techmino::utils;
 using namespace trantor;
 
+using Member = Room::Member;
+
+Member::Member(
+        int64_t playerId,
+        Member::Role role,
+        Member::State state,
+        Member::Type type
+) : PlayerBase(playerId),
+    role(role),
+    state(state),
+    type(type) {}
+
+Member::Member(Member &&member) noexcept:
+        PlayerBase(member.playerId),
+        _config(std::move(member._config)),
+        _customState(std::move(member._customState)),
+        _history(std::move(member._history)) {
+    group = member.group.load();
+    role = member.role.load();
+    state = member.state.load();
+    type = member.type.load();
+}
+
+void Member::setConfig(string &&config) {
+    unique_lock<shared_mutex> lock(_dataMutex);
+    _config = std::move(config);
+}
+
+bool Member::hasConfig() const {
+    shared_lock<shared_mutex> lock(_dataMutex);
+    return !_config.empty();
+}
+
+void Member::setCustomState(string &&customState) {
+    unique_lock<shared_mutex> lock(_dataMutex);
+    _customState = std::move(customState);
+}
+
+void Member::appendHistory(const string &history) {
+    unique_lock<shared_mutex> lock(_historyMutex);
+    _history += history;
+}
+
+string Member::history() const {
+    shared_lock<shared_mutex> lock(_historyMutex);
+    return _history;
+}
+
+Json::Value Member::info() const {
+    Json::Value info;
+    info["group"] = group.load();
+    info["role"] = string(enum_name(role.load()));
+    info["type"] = string(enum_name(type.load()));
+    {
+        shared_lock<shared_mutex> lock(_dataMutex);
+        if (state == State::Playing && !_customState.empty()) {
+            info["state"] = _customState;
+        } else {
+            info["state"] = string(enum_name(state.load()));
+        }
+        info["config"] = _config;
+    }
+    {
+        shared_lock<shared_mutex> lock(_historyMutex);
+        info["history"] = _history;
+    }
+    return info;
+}
+
+void Room::Member::reset() {
+    group = 0;
+    role = Role::Normal;
+    state = State::Standby;
+    type = Type::Spectator;
+    {
+        unique_lock<shared_mutex> lock(_dataMutex);
+        _customState.clear();
+    }
+    {
+        unique_lock<shared_mutex> lock(_historyMutex);
+        _history.clear();
+    }
+}
+
 Room::Room(
         uint64_t capacity,
         const string &password,
@@ -42,7 +126,7 @@ Room::Room(Room &&room) noexcept:
         _passwordHash(std::move(room._passwordHash)),
         _info(std::move(room._info.ref())),
         _data(std::move(room._data.ref())),
-        _playerSet(std::move(room._playerSet)),
+        _memberMap(std::move(room._memberMap)),
         _connectionManager(room._connectionManager) {
     state = room.state.load();
     capacity = room.capacity.load();
@@ -50,11 +134,11 @@ Room::Room(Room &&room) noexcept:
 }
 
 Room::~Room() {
-    cancelStart();
+    matchCancelStart();
     matchTryEnd(true);
-    for (const auto playerId: _playerSet) {
+    for (const auto &[playerId, _]: _memberMap) {
         try {
-            const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
+            const auto wsConnPtr = _connectionManager->getConnPtr(playerId);
             wsConnPtr->getContext<Player>()->reset();
             MessageJson(enum_integer(Action::RoomRemove)).to(wsConnPtr);
         } catch (const structures::MessageException &) {
@@ -66,7 +150,7 @@ Room::~Room() {
 bool Room::empty(bool all) const {
     if (all) {
         shared_lock<shared_mutex> lock(_playerMutex);
-        return _playerSet.empty();
+        return _memberMap.empty();
     } else {
         return countGamer() == 0;
     }
@@ -91,12 +175,12 @@ void Room::updatePassword(const string &password) {
     }
 }
 
-void Room::subscribe(int64_t playerId) {
+void Room::subscribe(Member &&member) {
     {
         unique_lock<shared_mutex> lock(_playerMutex);
-        _playerSet.insert(playerId);
+        _memberMap.emplace(member.playerId, std::move(member));
     }
-    cancelStart();
+    matchCancelStart();
 }
 
 void Room::unsubscribe(int64_t playerId) {
@@ -110,6 +194,7 @@ void Room::unsubscribe(int64_t playerId) {
         matchTryStart();
         matchTryEnd();
     }
+    // TODO: Check if there's any Admins in the room
 }
 
 Json::Value Room::parse(bool details) const {
@@ -227,7 +312,7 @@ void Room::matchTryStart(bool force) {
     });
 }
 
-bool Room::cancelStart() {
+bool Room::matchCancelStart() {
     if (state == State::Ready) {
         app().getLoop()->invalidateTimer(startTimerId.load());
         state = State::Standby;

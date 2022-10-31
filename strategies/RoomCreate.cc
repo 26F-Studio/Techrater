@@ -21,11 +21,8 @@ using namespace techmino::types;
 RoomCreate::RoomCreate() : MessageHandlerBase(enum_integer(Action::RoomCreate)) {}
 
 optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
-    if (!wsConnPtr->getContext<Player>()->hasConfig()) {
-        return i18n("notAvailable");
-    }
-
     if (!request.check("capacity", JsonValue::UInt64) ||
+        !request.check("config", JsonValue::String) ||
         !request.check("info", JsonValue::Object) ||
         !request.check("data", JsonValue::Object) ||
         request["capacity"].asUInt64() == 0) {
@@ -53,6 +50,7 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
 }
 
 void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
+    using Member = Room::Member;
     const auto &player = wsConnPtr->getContext<Player>();
     handleExceptions([&]() {
         auto room = make_shared<Room>(
@@ -61,11 +59,14 @@ void RoomCreate::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &r
                 request["info"],
                 request["data"]
         );
-        room->subscribe(player->playerId);
+        room->subscribe(Member{
+                player->playerId,
+                Member::Role::Admin,
+                Member::State::Standby,
+                Member::Type::Gamer
+        });
 
         player->setRoom(room);
-        player->role = Player::Role::Admin;
-        player->type = Player::Type::Gamer;
         MessageJson(_action).setData(room->parse(true)).to(wsConnPtr);
 
         app().getPlugin<RoomManager>()->setRoom(std::move(room));
