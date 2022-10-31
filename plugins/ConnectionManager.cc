@@ -24,31 +24,38 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     const auto &player = wsConnPtr->getContext<PlayerBase>();
     if (wsConnPtr->connected() && player) {
         const auto playerId = player->playerId;
-        unsubscribe(playerId);
+        LOG_DEBUG << "Player " << playerId << " subscribing...";
+        unsubscribe(playerId, true);
         {
             unique_lock<shared_mutex> lock(_sharedMutex);
             _connectionMap[playerId] = wsConnPtr;
         }
+    } else {
+        LOG_WARN << "Invalid connection: " << wsConnPtr->peerAddr().toIpPort();
     }
 }
 
-void ConnectionManager::unsubscribe(int64_t playerId) {
-    NO_EXCEPTION(
-            {
-                shared_lock<shared_mutex> lock(_sharedMutex);
-                if (_connectionMap.at(playerId)->connected()) {
-                    MessageJson(ErrorNumber::Error)
-                            .setMessage(i18n("connectionReplaced"))
-                            .to(_connectionMap.at(playerId));
-                } else {
-                    _connectionMap.at(playerId)->forceClose();
-                }
+void ConnectionManager::unsubscribe(int64_t playerId, bool notify) {
+    try {
+        if (notify) {
+            shared_lock<shared_mutex> lock(_sharedMutex);
+            if (_connectionMap.at(playerId)->connected()) {
+                MessageJson(ErrorNumber::Error)
+                        .setMessage(i18n("connectionClosed"))
+                        .to(_connectionMap.at(playerId));
+            } else {
+                _connectionMap.at(playerId)->forceClose();
             }
-            {
-                unique_lock<shared_mutex> lock(_sharedMutex);
-                _connectionMap.erase(playerId);
-            }
-    )
+        }
+        {
+            unique_lock<shared_mutex> lock(_sharedMutex);
+            LOG_DEBUG << "Erasing connection of player " << playerId << "...";
+            auto result = _connectionMap.erase(playerId);
+            LOG_DEBUG << "Erased " << result << " connections.";
+        }
+    } catch (const exception &e) {
+        LOG_TRACE << "Exception caught: " << e.what();
+    }
 }
 
 WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t playerId) {
@@ -56,8 +63,9 @@ WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t playerId) {
         shared_lock<shared_mutex> lock(_sharedMutex);
         const auto &wsConnPtr = _connectionMap.at(playerId);
         if (!wsConnPtr->connected() || !wsConnPtr->getContext<PlayerBase>()) {
+            LOG_DEBUG << "Invalid player: " << playerId;
             lock.unlock();
-            unsubscribe(playerId);
+            unsubscribe(playerId, false);
             throw MessageException(i18n("playerInvalid"));
         }
         return wsConnPtr;

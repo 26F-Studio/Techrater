@@ -30,13 +30,7 @@ optional<string> RoomChat::filter(const WebSocketConnectionPtr &wsConnPtr, Reque
         if (enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
             return i18n("noPermission");
         }
-    } else if (player->getRoom()) {
-        /// @note Reject if the player is not a room admin.
-        if (player->role < Player::Role::Admin) {
-            return i18n("noPermission");
-        }
-    } else {
-        /// @note Reject if no room is specified.
+    } else if (!player->getRoom()) {
         return i18n("roomNotFound");
     }
 

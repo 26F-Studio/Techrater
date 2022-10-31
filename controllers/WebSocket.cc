@@ -43,7 +43,7 @@ void WebSocket::handleNewConnection(
 
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
     if (wsConnPtr->hasContext()) {
-        _connectionManager->unsubscribe(wsConnPtr->getContext<Player>()->playerId);
+        _connectionManager->unsubscribe(wsConnPtr->getContext<Player>()->playerId, false);
     }
     wsConnPtr->forceClose();
 }
