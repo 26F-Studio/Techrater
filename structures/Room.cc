@@ -42,7 +42,7 @@ Room::Room(Room &&room) noexcept:
         _passwordHash(std::move(room._passwordHash)),
         _info(std::move(room._info.ref())),
         _data(std::move(room._data.ref())),
-        _playerSet(std::move(room._playerSet)),
+        _playerMap(std::move(room._playerMap)),
         _connectionManager(room._connectionManager) {
     state = room.state.load();
     capacity = room.capacity.load();
@@ -52,13 +52,12 @@ Room::Room(Room &&room) noexcept:
 Room::~Room() {
     cancelStart();
     matchTryEnd(true);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto &wsConnPtr = _connectionManager->getConnPtr(playerId);
+    for (const auto &[playerId, wsConnRef]: _playerMap) {
+        if (auto wsConnPtr = wsConnRef.lock()) {
             wsConnPtr->getContext<Player>()->reset();
             MessageJson(enum_integer(Action::RoomRemove)).to(wsConnPtr);
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
+        } else {
+            // TODO: Clear invalid connections
         }
     }
 }
@@ -66,7 +65,7 @@ Room::~Room() {
 bool Room::empty(bool all) const {
     if (all) {
         shared_lock<shared_mutex> lock(_playerMutex);
-        return _playerSet.empty();
+        return _playerMap.empty();
     } else {
         return countGamer() == 0;
     }
@@ -91,10 +90,10 @@ void Room::updatePassword(const string &password) {
     }
 }
 
-void Room::subscribe(int64_t playerId) {
+void Room::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     {
         unique_lock<shared_mutex> lock(_playerMutex);
-        _playerSet.insert(playerId);
+        _playerMap.emplace(wsConnPtr->getContext<Player>()->playerId, wsConnPtr);
     }
     cancelStart();
 }
@@ -102,7 +101,7 @@ void Room::subscribe(int64_t playerId) {
 void Room::unsubscribe(int64_t playerId) {
     {
         unique_lock<shared_mutex> lock(_playerMutex);
-        _playerSet.erase(playerId);
+        _playerMap.erase(playerId);
     }
     if (empty(true)) {
         app().getPlugin<RoomManager>()->removeRoom(roomId);
@@ -134,17 +133,14 @@ Json::Value Room::parse(bool details) const {
         result["chats"] = Json::arrayValue;
         {
             shared_lock<shared_mutex> playerLock(_playerMutex);
-            for (const auto playerId: _playerSet) {
-                try {
-                    result["players"].append(
-                            _connectionManager->getConnPtr(playerId)->getContext<Player>()->info()
-                    );
-                } catch (const structures::MessageException &) {
-                    LOG_WARN << "Player " << playerId << " not found";
+            for (const auto &[playerId, wsConnRef]: _playerMap) {
+                if (auto wsConnPtr = wsConnRef.lock()) {
+                    result["players"].append(wsConnPtr->getContext<Player>()->info());
+                } else {
+                    // TODO: Clear invalid connections
                 }
             }
         }
-
         {
             shared_lock<shared_mutex> lock(_chatMutex);
             for (const auto &chat: _chatList) {
@@ -158,12 +154,12 @@ Json::Value Room::parse(bool details) const {
 
 void Room::publish(const MessageJson &message, int64_t excludedId) {
     shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
+    for (const auto &[playerId, wsConnRef]: _playerMap) {
         if (excludedId != playerId) {
-            try {
-                message.to(_connectionManager->getConnPtr(playerId));
-            } catch (const structures::MessageException &) {
-                LOG_WARN << "Player " << playerId << " not found";
+            if (auto wsConnPtr = wsConnRef.lock()) {
+                message.to(wsConnPtr);
+            } else {
+                // TODO: Clear invalid connections
             }
         }
     }
@@ -212,14 +208,14 @@ void Room::matchTryStart(bool force) {
         state = State::Playing;
         {
             shared_lock<shared_mutex> lock(_playerMutex);
-            for (const auto playerId: _playerSet) {
-                try {
-                    const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+            for (const auto &[playerId, wsConnRef]: _playerMap) {
+                if (auto wsConnPtr = wsConnRef.lock()) {
+                    const auto &player = wsConnPtr->getContext<Player>();
                     if (player->type == Player::Type::Gamer) {
                         player->state = Player::State::Playing;
                     }
-                } catch (const structures::MessageException &) {
-                    LOG_WARN << "Player " << playerId << " not found";
+                } else {
+                    // TODO: Clear invalid connections
                 }
             }
         }
@@ -245,11 +241,11 @@ void Room::matchTryEnd(bool force) {
     state = State::Standby;
     {
         shared_lock<shared_mutex> lock(_playerMutex);
-        for (auto &playerId: _playerSet) {
-            try {
-                _connectionManager->getConnPtr(playerId)->getContext<Player>()->state = Player::State::Standby;
-            } catch (const structures::MessageException &) {
-                LOG_WARN << "Player " << playerId << " not found";
+        for (const auto &[playerId, wsConnRef]: _playerMap) {
+            if (auto wsConnPtr = wsConnRef.lock()) {
+                wsConnPtr->getContext<Player>()->state = Player::State::Standby;
+            } else {
+                // TODO: Clear invalid connections
             }
         }
     }
@@ -258,62 +254,54 @@ void Room::matchTryEnd(bool force) {
 }
 
 uint64_t Room::countGamer() const {
-    uint64_t counter{};
-    {
-        shared_lock<shared_mutex> lock(_playerMutex);
-        for (const auto playerId: _playerSet) {
-            try {
-                const auto &player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-                if (player->type == Player::Type::Gamer) {
-                    counter++;
-                }
-            } catch (const structures::MessageException &) {
-                LOG_WARN << "Player " << playerId << " not found";
-            }
+    shared_lock<shared_mutex> lock(_playerMutex);
+    return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        if (const auto &wsConnPtr = wsConnRef.lock()) {
+            const auto &player = wsConnPtr->template getContext<Player>();
+            return player->type == Player::Type::Gamer;
+        } else {
+            // TODO: Clear invalid connections
         }
-    }
-    return counter;
+        return true;
+    });
 }
 
 uint64_t Room::countSpectator() const {
-    uint64_t counter{};
     shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Spectator) {
-                counter++;
-            }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
+    return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        if (const auto &wsConnPtr = wsConnRef.lock()) {
+            const auto &player = wsConnPtr->template getContext<Player>();
+            return player->type == Player::Type::Spectator;
+        } else {
+            // TODO: Clear invalid connections
         }
-    }
-    return counter;
+        return true;
+    });
 }
 
 uint64_t Room::countPlaying() const {
-    uint64_t counter{};
     shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
-            if (player->type == Player::Type::Gamer &&
-                player->state == Player::State::Playing) {
-                counter++;
-            }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
+    return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        if (const auto &wsConnPtr = wsConnRef.lock()) {
+            const auto &player = wsConnPtr->template getContext<Player>();
+            return player->type == Player::Type::Gamer && player->state == Player::State::Playing;
+        } else {
+            // TODO: Clear invalid connections
         }
-    }
-    return counter;
+        return true;
+    });
 }
 
 bool Room::isAllReady() const {
-    bool hasGamer = false;
+    bool hasExpired = false, hasGamer = false;
     shared_lock<shared_mutex> lock(_playerMutex);
-    for (const auto playerId: _playerSet) {
-        try {
-            const auto player = _connectionManager->getConnPtr(playerId)->getContext<Player>();
+    return all_of(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        if (const auto &wsConnPtr = wsConnRef.lock()) {
+            const auto &player = wsConnPtr->template getContext<Player>();
             if (player->type == Player::Type::Gamer) {
                 if (player->state != Player::State::Ready) {
                     return false;
@@ -321,9 +309,17 @@ bool Room::isAllReady() const {
                     hasGamer = true;
                 }
             }
-        } catch (const structures::MessageException &) {
-            LOG_WARN << "Player " << playerId << " not found";
+        } else {
+            // TODO: Clear invalid connections
         }
-    }
-    return hasGamer;
+        return true;
+    }) && hasGamer;
+}
+
+void Room::refresh() {
+    unique_lock<shared_mutex> lock(_playerMutex);
+    erase_if(_playerMap, [](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        return wsConnRef.expired();
+    });
 }

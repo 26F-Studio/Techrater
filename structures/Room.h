@@ -31,6 +31,7 @@ namespace techmino::structures {
     class Room : helpers::I18nHelper<Room> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
+        using WebSocketConnectionRef = std::weak_ptr<drogon::WebSocketConnection>;
 
     public:
         enum class State {
@@ -58,7 +59,7 @@ namespace techmino::structures {
 
         void updatePassword(const std::string &password);
 
-        void subscribe(int64_t userId);
+        void subscribe(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
         void unsubscribe(int64_t userId);
 
@@ -101,7 +102,9 @@ namespace techmino::structures {
         plugins::ConnectionManager *_connectionManager;
         std::string _passwordHash;
         helpers::DataJson _info, _data;
-        std::unordered_set<int64_t> _playerSet;
+        std::unordered_map<int64_t, WebSocketConnectionRef> _playerMap;
         std::vector<Json::Value> _chatList;
+
+        void refresh();
     };
 }

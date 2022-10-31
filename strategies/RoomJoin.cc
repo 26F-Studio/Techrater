@@ -46,7 +46,7 @@ void RoomJoin::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
                     player->type = Player::Type::Gamer;
                 }
                 player->setRoom(room);
-                room->subscribe(player->playerId);
+                room->subscribe(wsConnPtr);
 
                 MessageJson(_action).setData(room->parse(true)).to(wsConnPtr);
                 room->publish(

@@ -21,7 +21,6 @@ namespace techmino::structures {
      * @param _roomId: string
      * @param _customState: string
      * @param _config: string
-     * @param _pingList: json
      */
     class Player : public PlayerBase {
     public:

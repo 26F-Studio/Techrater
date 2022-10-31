@@ -3,7 +3,6 @@
 //
 
 #include <plugins/ConnectionManager.h>
-#include <structures/ExceptionHandlers.h>
 #include <structures/Exceptions.h>
 #include <structures/PlayerBase.h>
 
