@@ -28,6 +28,13 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
         {
             unique_lock<shared_mutex> lock(_sharedMutex);
             _connectionMap[playerId] = wsConnPtr;
+
+            // TODO: Remove debugging logs
+            string playerList;
+            for (const auto &[_playerId, _]: _connectionMap) {
+                playerList += to_string(_playerId) + ", ";
+            }
+            LOG_DEBUG << "_connectionMap(" << _connectionMap.size() << "): " + playerList;
         }
     } else {
         LOG_WARN << "Invalid connection: " << wsConnPtr->peerAddr().toIpPort();
@@ -51,6 +58,12 @@ void ConnectionManager::unsubscribe(int64_t playerId, bool notify) {
             LOG_DEBUG << "Erasing connection of player " << playerId << "...";
             auto result = _connectionMap.erase(playerId);
             LOG_DEBUG << "Erased " << result << " connections.";
+            // TODO: Remove debugging logs
+            string playerList;
+            for (const auto &[_playerId, _]: _connectionMap) {
+                playerList += to_string(_playerId) + ", ";
+            }
+            LOG_DEBUG << "_connectionMap(" << _connectionMap.size() << "): " + playerList;
         }
     } catch (const exception &e) {
         LOG_TRACE << "Exception caught: " << e.what();

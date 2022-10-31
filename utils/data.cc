@@ -11,7 +11,7 @@ using namespace trantor;
 
 static const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-string data::randomString(const uint64_t &length) {
+string data::randomString(uint64_t length) {
     static mt19937 engine(random_device{}());
     static uniform_int_distribution<uint64_t> uniDist(0, sizeof(charset) - 2);
     string result;
@@ -22,7 +22,7 @@ string data::randomString(const uint64_t &length) {
     return result;
 }
 
-uint64_t data::randomUniform(uint64_t size) {
+uint64_t data::randomUniform(uint64_t start, uint64_t size) {
     mt19937 generator(static_cast<unsigned int>(Date::now().microSecondsSinceEpoch()));
     uniform_int_distribution<uint64_t> dis(0, size);
     return dis(generator);

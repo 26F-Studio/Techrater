@@ -9,7 +9,6 @@
 #include <helpers/I18nHelper.h>
 #include <helpers/MessageJson.h>
 #include <helpers/RequestJson.h>
-#include <plugins/ConnectionManager.h>
 
 namespace techmino::structures {
     /**
@@ -61,7 +60,9 @@ namespace techmino::structures {
 
         void subscribe(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
-        void unsubscribe(int64_t userId);
+        void unsubscribe(int64_t playerId);
+
+        int64_t getFirstPlayerId();
 
         [[nodiscard]] Json::Value parse(bool details = false) const;
 
@@ -95,11 +96,10 @@ namespace techmino::structures {
     public:
         const std::string roomId{drogon::utils::getUuid()};
         std::atomic<State> state{State::Standby};
-        std::atomic<uint64_t> capacity, startTimerId;
+        std::atomic<uint64_t> capacity, startTimerId, seed;
 
     private:
         mutable std::shared_mutex _dataMutex, _playerMutex, _chatMutex;
-        plugins::ConnectionManager *_connectionManager;
         std::string _passwordHash;
         helpers::DataJson _info, _data;
         std::unordered_map<int64_t, WebSocketConnectionRef> _playerMap;

@@ -13,7 +13,6 @@ using namespace drogon;
 using namespace magic_enum;
 using namespace std;
 using namespace techmino::helpers;
-using namespace techmino::plugins;
 using namespace techmino::strategies;
 using namespace techmino::structures;
 using namespace techmino::types;

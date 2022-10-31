@@ -19,8 +19,9 @@ namespace techmino::internal {
 };
 
 namespace techmino::utils::data {
-    std::string randomString(const uint64_t &length);
-    uint64_t randomUniform(uint64_t size = 99999999);
+    std::string randomString(uint64_t length);
+
+    uint64_t randomUniform(uint64_t start = 0, uint64_t size = 99999999);
 }
 
 

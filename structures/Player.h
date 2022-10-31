@@ -49,7 +49,7 @@ namespace techmino::structures {
 
         Player(Player &&player) noexcept;
 
-        ~Player() override;
+        ~Player() override = default;
 
         [[nodiscard]] std::shared_ptr<Room> getRoom() const;
 

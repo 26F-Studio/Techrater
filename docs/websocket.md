@@ -200,7 +200,7 @@ All ***users*** in the room
 }
 ```
 
-### 1101 Match  Ready
+### 1101 Match Ready
 
 #### Description
 
@@ -247,7 +247,9 @@ All ***users*** in the room
 {
   "action": 1102,
   "errno": 0,
-  "data": 123456789
+  "data": {
+    "seed": 123456789
+  }
 }
 ```
 
@@ -652,6 +654,7 @@ The ***user*** who created the room
   "data": {
     "roomId": "HEX_STRING",
     "capacity": 2,
+    "seed": 123456789,
     "state": "Standby",
     "count": {
       "Gamer": 1,
@@ -893,6 +896,7 @@ Join a room.
   "data": {
     "roomId": "HEX_STRING",
     "capacity": 2,
+    "seed": 123456789,
     "state": "Playing",
     "count": {
       "Gamer": 2,

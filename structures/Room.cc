@@ -27,9 +27,9 @@ Room::Room(
         Json::Value info,
         Json::Value data
 ) : capacity(capacity),
+    seed(data::randomUniform()),
     _info(std::move(info)),
-    _data(std::move(data)),
-    _connectionManager(app().getPlugin<ConnectionManager>()) {
+    _data(std::move(data)) {
     if (!password.empty()) {
         _passwordHash = crypto::blake2B(password);
     }
@@ -42,8 +42,7 @@ Room::Room(Room &&room) noexcept:
         _passwordHash(std::move(room._passwordHash)),
         _info(std::move(room._info.ref())),
         _data(std::move(room._data.ref())),
-        _playerMap(std::move(room._playerMap)),
-        _connectionManager(room._connectionManager) {
+        _playerMap(std::move(room._playerMap)) {
     state = room.state.load();
     capacity = room.capacity.load();
     startTimerId = room.startTimerId.load();
@@ -58,6 +57,7 @@ Room::~Room() {
             MessageJson(enum_integer(Action::RoomRemove)).to(wsConnPtr);
         } else {
             // TODO: Clear invalid connections
+            LOG_DEBUG << "Expired player: " << playerId;
         }
     }
 }
@@ -99,25 +99,48 @@ void Room::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
 }
 
 void Room::unsubscribe(int64_t playerId) {
+    Player::Type type{Player::Type::Spectator};
     {
         unique_lock<shared_mutex> lock(_playerMutex);
-        _playerMap.erase(playerId);
+        const auto node = _playerMap.extract(playerId);
+        if (!node.empty()) {
+            if (const auto &wsConnPtr = node.mapped().lock()) {
+                type = wsConnPtr->getContext<Player>()->type.load();
+                LOG_DEBUG << "Player " << playerId << " left room with type: " << enum_name(type);
+            }
+        }
     }
-    if (empty(true)) {
-        app().getPlugin<RoomManager>()->removeRoom(roomId);
-    } else {
-        matchTryStart();
-        matchTryEnd();
+    if (type == Player::Type::Gamer) {
+        if (empty(true)) {
+            app().getPlugin<RoomManager>()->removeRoom(roomId);
+        } else {
+            matchTryStart();
+            matchTryEnd();
+        }
     }
+}
+
+int64_t Room::getFirstPlayerId() {
+    for (const auto &[targetId, wsConnRef]: _playerMap) {
+        if (auto wsConnPtr = wsConnRef.lock()) {
+            return wsConnPtr->getContext<Player>()->playerId;
+        }
+    }
+    return -1;
 }
 
 Json::Value Room::parse(bool details) const {
     Json::Value result;
     result["roomId"] = roomId;
     result["capacity"] = capacity.load();
-    result["state"] = string(enum_name(state.load()));
     result["count"]["Gamer"] = countGamer();
     result["count"]["Spectator"] = countSpectator();
+
+    const auto tempState = state.load();
+    if (tempState == State::Playing) {
+        result["seed"] = seed.load();
+    }
+    result["state"] = string(enum_name(tempState));
 
     {
         shared_lock<shared_mutex> dataLock(_dataMutex);
@@ -138,6 +161,7 @@ Json::Value Room::parse(bool details) const {
                     result["players"].append(wsConnPtr->getContext<Player>()->info());
                 } else {
                     // TODO: Clear invalid connections
+                    LOG_DEBUG << "Expired player: " << playerId;
                 }
             }
         }
@@ -160,6 +184,7 @@ void Room::publish(const MessageJson &message, int64_t excludedId) {
                 message.to(wsConnPtr);
             } else {
                 // TODO: Clear invalid connections
+                LOG_DEBUG << "Expired player: " << playerId;
             }
         }
     }
@@ -216,10 +241,13 @@ void Room::matchTryStart(bool force) {
                     }
                 } else {
                     // TODO: Clear invalid connections
+                    LOG_DEBUG << "Expired player: " << playerId;
                 }
             }
         }
-        publish(MessageJson(enum_integer(Action::MatchStart)).setData(data::randomUniform()));
+        Json::Value data;
+        data["seed"] = seed.load();
+        publish(MessageJson(enum_integer(Action::MatchStart)).setData(data));
     });
 }
 
@@ -238,6 +266,7 @@ void Room::matchTryEnd(bool force) {
         return;
     }
 
+    seed = data::randomUniform();
     state = State::Standby;
     {
         shared_lock<shared_mutex> lock(_playerMutex);
@@ -246,6 +275,7 @@ void Room::matchTryEnd(bool force) {
                 wsConnPtr->getContext<Player>()->state = Player::State::Standby;
             } else {
                 // TODO: Clear invalid connections
+                LOG_DEBUG << "Expired player: " << playerId;
             }
         }
     }
@@ -262,6 +292,7 @@ uint64_t Room::countGamer() const {
             return player->type == Player::Type::Gamer;
         } else {
             // TODO: Clear invalid connections
+            LOG_DEBUG << "Expired player: " << playerId;
         }
         return true;
     });
@@ -276,6 +307,7 @@ uint64_t Room::countSpectator() const {
             return player->type == Player::Type::Spectator;
         } else {
             // TODO: Clear invalid connections
+            LOG_DEBUG << "Expired player: " << playerId;
         }
         return true;
     });
@@ -290,13 +322,14 @@ uint64_t Room::countPlaying() const {
             return player->type == Player::Type::Gamer && player->state == Player::State::Playing;
         } else {
             // TODO: Clear invalid connections
+            LOG_DEBUG << "Expired player: " << playerId;
         }
         return true;
     });
 }
 
 bool Room::isAllReady() const {
-    bool hasExpired = false, hasGamer = false;
+    bool hasGamer = false;
     shared_lock<shared_mutex> lock(_playerMutex);
     return all_of(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
         const auto &[playerId, wsConnRef] = item;
@@ -311,6 +344,7 @@ bool Room::isAllReady() const {
             }
         } else {
             // TODO: Clear invalid connections
+            LOG_DEBUG << "Expired player: " << playerId;
         }
         return true;
     }) && hasGamer;

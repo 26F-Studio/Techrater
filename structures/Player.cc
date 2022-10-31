@@ -36,16 +36,6 @@ Player::Player(Player &&player) noexcept:
     type = player.type.load();
 }
 
-Player::~Player() {
-    // TODO: Check if this would cause problems
-    if (_room) {
-        _room->unsubscribe(playerId);
-        Json::Value data;
-        data["playerId"] = playerId;
-        _room->publish(MessageJson(enum_integer(Action::RoomLeave)).setData(std::move(data)), playerId);
-    }
-}
-
 shared_ptr<Room> Player::getRoom() const {
     shared_lock<shared_mutex> lock(_dataMutex);
     return _room;

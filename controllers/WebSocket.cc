@@ -5,6 +5,7 @@
 #include <controllers/WebSocket.h>
 #include <magic_enum.hpp>
 #include <structures/Player.h>
+#include <types/Action.h>
 
 using namespace drogon;
 using namespace magic_enum;
@@ -43,7 +44,29 @@ void WebSocket::handleNewConnection(
 
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
     if (wsConnPtr->hasContext()) {
-        _connectionManager->unsubscribe(wsConnPtr->getContext<Player>()->playerId, false);
+        const auto player = wsConnPtr->getContext<Player>();
+        if (const auto &room = player->getRoom()) {
+            NO_EXCEPTION(
+                    if (player->role > Player::Role::Normal) {
+                        const auto &targetPlayer = app().getPlugin<ConnectionManager>()->getConnPtr(
+                                room->getFirstPlayerId()
+                        )->getContext<Player>();
+                        targetPlayer->role = player->role.load();
+
+                        Json::Value data;
+                        data["playerId"] = targetPlayer->playerId;
+                        data["role"] = string(enum_name(player->role.load()));
+                        room->publish(MessageJson(enum_integer(Action::PlayerRole)).setData(data));
+                    }
+            )
+
+            room->unsubscribe(player->playerId);
+
+            Json::Value data;
+            data["playerId"] = player->playerId;
+            room->publish(MessageJson(enum_integer(Action::RoomLeave)).setData(data));
+        }
+        _connectionManager->unsubscribe(player->playerId, false);
     }
     wsConnPtr->forceClose();
 }
