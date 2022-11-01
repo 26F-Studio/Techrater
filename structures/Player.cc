@@ -5,7 +5,6 @@
 #include <helpers/MessageJson.h>
 #include <magic_enum.hpp>
 #include <structures/Player.h>
-#include <types/Action.h>
 
 using namespace drogon;
 using namespace drogon_model;
@@ -28,6 +27,7 @@ Player::Player(
 
 Player::Player(Player &&player) noexcept:
         PlayerBase(player.playerId),
+        playerInfo(player.playerInfo),
         _customState(std::move(player._customState)),
         _config(std::move(player._config)) {
     group = player.group.load();

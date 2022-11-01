@@ -35,20 +35,15 @@ Room::Room(
     }
     _data.canSkip(true);
     _data.canOverwrite(true);
-}
-
-Room::Room(Room &&room) noexcept:
-        roomId(room.roomId),
-        _passwordHash(std::move(room._passwordHash)),
-        _info(std::move(room._info.ref())),
-        _data(std::move(room._data.ref())),
-        _playerMap(std::move(room._playerMap)) {
-    state = room.state.load();
-    capacity = room.capacity.load();
-    startTimerId = room.startTimerId.load();
+    _cleanTimerId = app().getLoop()->runEvery(chrono::seconds(60), [this] {
+        if (_needClean) {
+            clean();
+        }
+    });
 }
 
 Room::~Room() {
+    app().getLoop()->invalidateTimer(_cleanTimerId);
     cancelStart();
     matchTryEnd(true);
     for (const auto &[playerId, wsConnRef]: _playerMap) {
@@ -56,13 +51,12 @@ Room::~Room() {
             wsConnPtr->getContext<Player>()->reset();
             MessageJson(enum_integer(Action::RoomRemove)).to(wsConnPtr);
         } else {
-            // TODO: Clear invalid connections
-            LOG_DEBUG << "Expired player: " << playerId;
+            _needClean = true;
         }
     }
 }
 
-bool Room::empty(bool all) const {
+bool Room::empty(bool all) {
     if (all) {
         shared_lock<shared_mutex> lock(_playerMutex);
         return _playerMap.empty();
@@ -71,7 +65,7 @@ bool Room::empty(bool all) const {
     }
 }
 
-bool Room::full() const { return countGamer() >= capacity; }
+bool Room::full() { return countGamer() >= capacity; }
 
 bool Room::checkPassword(const string &password) const {
     shared_lock<shared_mutex> lock(_dataMutex);
@@ -129,7 +123,7 @@ int64_t Room::getFirstPlayerId() {
     return -1;
 }
 
-Json::Value Room::parse(bool details) const {
+Json::Value Room::parse(bool details) {
     Json::Value result;
     result["roomId"] = roomId;
     result["capacity"] = capacity.load();
@@ -160,8 +154,7 @@ Json::Value Room::parse(bool details) const {
                 if (auto wsConnPtr = wsConnRef.lock()) {
                     result["players"].append(wsConnPtr->getContext<Player>()->info());
                 } else {
-                    // TODO: Clear invalid connections
-                    LOG_DEBUG << "Expired player: " << playerId;
+                    _needClean = true;
                 }
             }
         }
@@ -183,8 +176,7 @@ void Room::publish(const MessageJson &message, int64_t excludedId) {
             if (auto wsConnPtr = wsConnRef.lock()) {
                 message.to(wsConnPtr);
             } else {
-                // TODO: Clear invalid connections
-                LOG_DEBUG << "Expired player: " << playerId;
+                _needClean = true;
             }
         }
     }
@@ -229,7 +221,7 @@ void Room::matchTryStart(bool force) {
     state = State::Ready;
     publish(MessageJson(enum_integer(Action::MatchReady)));
 
-    startTimerId = app().getLoop()->runAfter(3, [this]() {
+    _startTimerId = app().getLoop()->runAfter(3, [this]() {
         state = State::Playing;
         {
             shared_lock<shared_mutex> lock(_playerMutex);
@@ -240,8 +232,7 @@ void Room::matchTryStart(bool force) {
                         player->state = Player::State::Playing;
                     }
                 } else {
-                    // TODO: Clear invalid connections
-                    LOG_DEBUG << "Expired player: " << playerId;
+                    _needClean = true;
                 }
             }
         }
@@ -253,7 +244,7 @@ void Room::matchTryStart(bool force) {
 
 bool Room::cancelStart() {
     if (state == State::Ready) {
-        app().getLoop()->invalidateTimer(startTimerId.load());
+        app().getLoop()->invalidateTimer(_startTimerId.load());
         state = State::Standby;
         return true;
     }
@@ -274,8 +265,7 @@ void Room::matchTryEnd(bool force) {
             if (auto wsConnPtr = wsConnRef.lock()) {
                 wsConnPtr->getContext<Player>()->state = Player::State::Standby;
             } else {
-                // TODO: Clear invalid connections
-                LOG_DEBUG << "Expired player: " << playerId;
+                _needClean = true;
             }
         }
     }
@@ -283,7 +273,7 @@ void Room::matchTryEnd(bool force) {
     publish(MessageJson(enum_integer(Action::MatchEnd)));
 }
 
-uint64_t Room::countGamer() const {
+uint64_t Room::countGamer() {
     shared_lock<shared_mutex> lock(_playerMutex);
     return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
         const auto &[playerId, wsConnRef] = item;
@@ -291,14 +281,13 @@ uint64_t Room::countGamer() const {
             const auto &player = wsConnPtr->template getContext<Player>();
             return player->type == Player::Type::Gamer;
         } else {
-            // TODO: Clear invalid connections
-            LOG_DEBUG << "Expired player: " << playerId;
+            _needClean = true;
         }
         return true;
     });
 }
 
-uint64_t Room::countSpectator() const {
+uint64_t Room::countSpectator() {
     shared_lock<shared_mutex> lock(_playerMutex);
     return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
         const auto &[playerId, wsConnRef] = item;
@@ -306,14 +295,13 @@ uint64_t Room::countSpectator() const {
             const auto &player = wsConnPtr->template getContext<Player>();
             return player->type == Player::Type::Spectator;
         } else {
-            // TODO: Clear invalid connections
-            LOG_DEBUG << "Expired player: " << playerId;
+            _needClean = true;
         }
         return true;
     });
 }
 
-uint64_t Room::countPlaying() const {
+uint64_t Room::countPlaying() {
     shared_lock<shared_mutex> lock(_playerMutex);
     return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
         const auto &[playerId, wsConnRef] = item;
@@ -321,14 +309,13 @@ uint64_t Room::countPlaying() const {
             const auto &player = wsConnPtr->template getContext<Player>();
             return player->type == Player::Type::Gamer && player->state == Player::State::Playing;
         } else {
-            // TODO: Clear invalid connections
-            LOG_DEBUG << "Expired player: " << playerId;
+            _needClean = true;
         }
         return true;
     });
 }
 
-bool Room::isAllReady() const {
+bool Room::isAllReady() {
     bool hasGamer = false;
     shared_lock<shared_mutex> lock(_playerMutex);
     return all_of(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
@@ -343,17 +330,21 @@ bool Room::isAllReady() const {
                 }
             }
         } else {
-            // TODO: Clear invalid connections
-            LOG_DEBUG << "Expired player: " << playerId;
+            _needClean = true;
         }
         return true;
     }) && hasGamer;
 }
 
-void Room::refresh() {
-    unique_lock<shared_mutex> lock(_playerMutex);
-    erase_if(_playerMap, [](const auto &item) {
-        const auto &[playerId, wsConnRef] = item;
-        return wsConnRef.expired();
-    });
+void Room::clean() {
+    {
+        unique_lock<shared_mutex> lock(_playerMutex);
+        erase_if(_playerMap, [](const auto &item) {
+            const auto &[playerId, wsConnRef] = item;
+            return wsConnRef.expired();
+        });
+    }
+    if (empty(true)) {
+        app().getPlugin<RoomManager>()->removeRoom(roomId);
+    }
 }

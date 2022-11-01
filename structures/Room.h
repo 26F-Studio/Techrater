@@ -46,13 +46,11 @@ namespace techmino::structures {
                 Json::Value data
         );
 
-        Room(Room &&room) noexcept;
-
         ~Room() override;
 
-        bool empty(bool all = false) const;
+        bool empty(bool all = false);
 
-        bool full() const;
+        bool full();
 
         [[nodiscard]] bool checkPassword(const std::string &password) const;
 
@@ -64,7 +62,7 @@ namespace techmino::structures {
 
         int64_t getFirstPlayerId();
 
-        [[nodiscard]] Json::Value parse(bool details = false) const;
+        Json::Value parse(bool details = false);
 
         void publish(const helpers::MessageJson &message, int64_t excludedId = -1);
 
@@ -85,18 +83,18 @@ namespace techmino::structures {
         void matchTryEnd(bool force = false);
 
     private:
-        [[nodiscard]] uint64_t countGamer() const;
+        uint64_t countGamer();
 
-        [[nodiscard]] uint64_t countSpectator() const;
+        uint64_t countSpectator();
 
-        [[nodiscard]] uint64_t countPlaying() const;
+        uint64_t countPlaying();
 
-        [[nodiscard]] bool isAllReady() const;
+        bool isAllReady();
 
     public:
         const std::string roomId{drogon::utils::getUuid()};
         std::atomic<State> state{State::Standby};
-        std::atomic<uint64_t> capacity, startTimerId, seed;
+        std::atomic<uint64_t> capacity, seed;
 
     private:
         mutable std::shared_mutex _dataMutex, _playerMutex, _chatMutex;
@@ -104,7 +102,9 @@ namespace techmino::structures {
         helpers::DataJson _info, _data;
         std::unordered_map<int64_t, WebSocketConnectionRef> _playerMap;
         std::vector<Json::Value> _chatList;
+        std::atomic<bool> _needClean{false};
+        std::atomic<uint64_t> _cleanTimerId, _startTimerId;
 
-        void refresh();
+        void clean();
     };
 }
