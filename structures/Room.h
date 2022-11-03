@@ -85,9 +85,9 @@ namespace techmino::structures {
     private:
         uint64_t countGamer();
 
-        uint64_t countSpectator();
+        uint64_t countRemaining();
 
-        uint64_t countPlaying();
+        uint64_t countSpectator();
 
         bool isAllReady();
 

@@ -104,13 +104,11 @@ void Room::unsubscribe(int64_t playerId) {
             }
         }
     }
-    if (type == Player::Type::Gamer) {
-        if (empty(true)) {
-            app().getPlugin<RoomManager>()->removeRoom(roomId);
-        } else {
-            matchTryStart();
-            matchTryEnd();
-        }
+    if (empty(true)) {
+        app().getPlugin<RoomManager>()->removeRoom(roomId);
+    } else if (type == Player::Type::Gamer) {
+        matchTryStart();
+        matchTryEnd();
     }
 }
 
@@ -252,9 +250,14 @@ bool Room::cancelStart() {
 }
 
 void Room::matchTryEnd(bool force) {
-    if (state != State::Playing ||
-        (!force && countPlaying() > 1)) {
+    if (state != State::Playing) {
         return;
+    }
+
+    if (!force) {
+        if (countRemaining() > 1) {
+            return;
+        }
     }
 
     seed = data::randomUniform();
@@ -263,7 +266,9 @@ void Room::matchTryEnd(bool force) {
         shared_lock<shared_mutex> lock(_playerMutex);
         for (const auto &[playerId, wsConnRef]: _playerMap) {
             if (auto wsConnPtr = wsConnRef.lock()) {
-                wsConnPtr->getContext<Player>()->state = Player::State::Standby;
+                const auto &player = wsConnPtr->getContext<Player>();
+                player->state = Player::State::Standby;
+                player->clearHistory();
             } else {
                 _needClean = true;
             }
@@ -283,7 +288,28 @@ uint64_t Room::countGamer() {
         } else {
             _needClean = true;
         }
-        return true;
+        return false;
+    });
+}
+
+uint64_t Room::countRemaining() {
+    unordered_set<uint64_t> groupSet;
+    shared_lock<shared_mutex> lock(_playerMutex);
+    return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
+        const auto &[playerId, wsConnRef] = item;
+        if (const auto &wsConnPtr = wsConnRef.lock()) {
+            const auto &player = wsConnPtr->template getContext<Player>();
+            if (player->state == Player::State::Playing) {
+                if (player->group > 0) {
+                    const auto [_, result] = groupSet.insert(player->group);
+                    return result;
+                }
+                return true;
+            }
+        } else {
+            _needClean = true;
+        }
+        return false;
     });
 }
 
@@ -294,20 +320,6 @@ uint64_t Room::countSpectator() {
         if (const auto &wsConnPtr = wsConnRef.lock()) {
             const auto &player = wsConnPtr->template getContext<Player>();
             return player->type == Player::Type::Spectator;
-        } else {
-            _needClean = true;
-        }
-        return true;
-    });
-}
-
-uint64_t Room::countPlaying() {
-    shared_lock<shared_mutex> lock(_playerMutex);
-    return count_if(_playerMap.begin(), _playerMap.end(), [&](const auto &item) {
-        const auto &[playerId, wsConnRef] = item;
-        if (const auto &wsConnPtr = wsConnRef.lock()) {
-            const auto &player = wsConnPtr->template getContext<Player>();
-            return player->type == Player::Type::Gamer && player->state == Player::State::Playing;
         } else {
             _needClean = true;
         }
