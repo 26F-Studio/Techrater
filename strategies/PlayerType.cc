@@ -23,7 +23,9 @@ PlayerType::PlayerType() : MessageHandlerBase(enum_integer(Action::PlayerType)) 
 
 optional<string> PlayerType::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
-    if (!player->getRoom() ||
+    auto room = player->getRoom();
+    if (!room ||
+        room->state == Room::State::Playing ||
         player->state != Player::State::Standby) {
         return i18n("notAvailable");
     }
@@ -36,7 +38,7 @@ optional<string> PlayerType::filter(const WebSocketConnectionPtr &wsConnPtr, Req
     if (!castedType.has_value()) {
         return i18n("invalidType");
     }
-    if (castedType.value() == Player::Type::Gamer && player->getRoom()->full()) {
+    if (castedType.value() == Player::Type::Gamer && room->full()) {
         return i18n("roomFull");
     }
 
