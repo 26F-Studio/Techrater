@@ -66,9 +66,9 @@ void Player::appendHistory(const std::string &history) {
     _history += history;
 }
 
-string Player::history() const {
-    shared_lock<shared_mutex> lock(_historyMutex);
-    return _history;
+void Player::clearHistory() {
+    unique_lock<shared_mutex> lock(_historyMutex);
+    _history.clear();
 }
 
 Json::Value Player::info() const {
@@ -105,8 +105,5 @@ void Player::reset() {
         _room = nullptr;
         _customState.clear();
     }
-    {
-        unique_lock<shared_mutex> lock(_historyMutex);
-        _history.clear();
-    }
+    clearHistory();
 }

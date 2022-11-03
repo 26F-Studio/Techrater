@@ -63,7 +63,7 @@ namespace techmino::structures {
 
         void appendHistory(const std::string &history);
 
-        [[nodiscard]] std::string history() const;
+        void clearHistory();
 
         [[nodiscard]] Json::Value info() const;
 
