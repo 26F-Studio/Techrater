@@ -38,15 +38,12 @@ void RoomLeave::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &re
             room = wsConnPtr->getContext<Player>()->getRoom();
         }
 
-        room->unsubscribe(player->playerId);
-
-        player->reset();
-
-        auto message = MessageJson(_action);
-        message.to(wsConnPtr);
-
         Json::Value data;
         data["playerId"] = player->playerId;
-        room->publish(message.setData(std::move(data)), player->playerId);
+        const auto message = MessageJson(_action).setData(std::move(data));
+        room->unsubscribe(player->playerId, message);
+
+        player->reset();
+        message.to(wsConnPtr);
     }, _action, wsConnPtr);
 }

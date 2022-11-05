@@ -35,16 +35,13 @@ optional<string> RoomCreate::filter(const WebSocketConnectionPtr &wsConnPtr, Req
     const auto &player = wsConnPtr->getContext<Player>();
     const auto &room = player->getRoom();
     if (room) {
-        room->unsubscribe(player->playerId);
-
-        player->reset();
-
-        auto message = MessageJson(enum_integer(Action::RoomLeave));
-        message.to(wsConnPtr);
-
         Json::Value data;
         data["playerId"] = player->playerId;
-        room->publish(message.setData(std::move(data)), player->playerId);
+        const auto message = MessageJson(enum_integer(Action::RoomLeave)).setData(std::move(data));
+        room->unsubscribe(player->playerId, message);
+
+        player->reset();
+        message.to(wsConnPtr);
     }
 
     request.trim("password", JsonValue::String);

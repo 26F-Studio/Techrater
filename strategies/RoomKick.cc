@@ -68,10 +68,9 @@ void RoomKick::process(const WebSocketConnectionPtr &wsConnPtr, RequestJson &req
         Json::Value data;
         data["executorId"] = player->playerId;
         data["playerId"] = target->playerId;
-        auto message = MessageJson(_action).setData(std::move(data));
+        const auto message = MessageJson(_action).setData(std::move(data));
 
-        room->unsubscribe(target->playerId);
-        room->publish(message, target->playerId);
+        room->unsubscribe(target->playerId, message);
 
         target->reset();
         message.to(targetConnPtr);

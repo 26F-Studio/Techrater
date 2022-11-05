@@ -9,6 +9,7 @@
 #include <helpers/I18nHelper.h>
 #include <helpers/MessageJson.h>
 #include <helpers/RequestJson.h>
+#include <plugins/ConnectionManager.h>
 
 namespace techmino::structures {
     /**
@@ -58,7 +59,7 @@ namespace techmino::structures {
 
         void subscribe(const drogon::WebSocketConnectionPtr &wsConnPtr);
 
-        void unsubscribe(int64_t playerId);
+        void unsubscribe(int64_t playerId, std::optional<helpers::MessageJson> &&message = std::nullopt);
 
         int64_t getFirstPlayerId();
 
@@ -92,6 +93,7 @@ namespace techmino::structures {
         bool isAllReady();
 
     public:
+        const std::unique_ptr<plugins::ConnectionManager> _connectionManager{drogon::app().getPlugin<plugins::ConnectionManager>()};
         const std::string roomId{drogon::utils::getUuid()};
         std::atomic<State> state{State::Standby};
         std::atomic<uint64_t> capacity, seed;

@@ -4,6 +4,7 @@
 
 #include <magic_enum.hpp>
 #include <plugins/RoomManager.h>
+#include <structures/ExceptionHandlers.h>
 #include <structures/Player.h>
 #include <structures/Room.h>
 #include <types/Action.h>
@@ -92,18 +93,40 @@ void Room::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     cancelStart();
 }
 
-void Room::unsubscribe(int64_t playerId) {
+void Room::unsubscribe(int64_t playerId, optional<MessageJson> &&message) {
+    Player::Role role{Player::Role::Normal};
     Player::Type type{Player::Type::Spectator};
     {
         unique_lock<shared_mutex> lock(_playerMutex);
         const auto node = _playerMap.extract(playerId);
         if (!node.empty()) {
             if (const auto &wsConnPtr = node.mapped().lock()) {
-                type = wsConnPtr->getContext<Player>()->type.load();
+                const auto player = wsConnPtr->getContext<Player>();
+                role = player->role;
+                type = player->type;
                 LOG_DEBUG << "Player " << playerId << " left room with type: " << enum_name(type);
             }
         }
     }
+
+    NO_EXCEPTION(
+            if (role > Player::Role::Normal) {
+                const auto targetPlayer = _connectionManager->getConnPtr(
+                        getFirstPlayerId()
+                )->getContext<Player>();
+                targetPlayer->role = role;
+
+                Json::Value data;
+                data["playerId"] = targetPlayer->playerId;
+                data["role"] = string(enum_name(role));
+                publish(MessageJson(enum_integer(Action::PlayerRole)).setData(data));
+            }
+    )
+
+    if (message.has_value()) {
+        publish(message.value());
+    }
+
     if (empty(true)) {
         app().getPlugin<RoomManager>()->removeRoom(roomId);
     } else if (type == Player::Type::Gamer) {
