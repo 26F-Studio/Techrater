@@ -45,7 +45,7 @@ void WebSocket::handleNewConnection(
 void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) {
     if (wsConnPtr->hasContext()) {
         const auto player = wsConnPtr->getContext<Player>();
-        if (const auto &room = player->getRoom()) {
+        if (auto room = player->getRoom()) {
             NO_EXCEPTION(
                     if (player->role > Player::Role::Normal) {
                         const auto &targetPlayer = app().getPlugin<ConnectionManager>()->getConnPtr(
@@ -66,7 +66,7 @@ void WebSocket::handleConnectionClosed(const WebSocketConnectionPtr &wsConnPtr) 
             data["playerId"] = player->playerId;
             room->publish(MessageJson(enum_integer(Action::RoomLeave)).setData(data));
         }
-        _connectionManager->unsubscribe(player->playerId, false);
+        _connectionManager->unsubscribe(wsConnPtr);
     }
     wsConnPtr->forceClose();
 }

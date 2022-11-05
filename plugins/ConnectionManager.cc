@@ -24,7 +24,7 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     if (wsConnPtr->connected() && player) {
         const auto playerId = player->playerId;
         LOG_DEBUG << "Player " << playerId << " subscribing...";
-        unsubscribe(playerId, true);
+        unsubscribe(wsConnPtr, true);
         {
             unique_lock<shared_mutex> lock(_sharedMutex);
             _connectionMap[playerId] = wsConnPtr;
@@ -41,23 +41,23 @@ void ConnectionManager::subscribe(const WebSocketConnectionPtr &wsConnPtr) {
     }
 }
 
-void ConnectionManager::unsubscribe(int64_t playerId, bool notify) {
+void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr, bool force) {
+    const auto playerId = wsConnPtr->getContext<PlayerBase>()->playerId;
     try {
-        if (notify) {
-            shared_lock<shared_mutex> lock(_sharedMutex);
-            if (_connectionMap.at(playerId)->connected()) {
+        unique_lock<shared_mutex> lock(_sharedMutex);
+        const auto oldWsConnPtr = _connectionMap.at(playerId);
+        if (force || oldWsConnPtr == wsConnPtr) {
+            if (oldWsConnPtr->connected()) {
                 MessageJson(ErrorNumber::Error)
                         .setMessage(i18n("connectionClosed"))
-                        .to(_connectionMap.at(playerId));
+                        .to(oldWsConnPtr);
             } else {
-                _connectionMap.at(playerId)->forceClose();
+                oldWsConnPtr->forceClose();
             }
-        }
-        {
-            unique_lock<shared_mutex> lock(_sharedMutex);
             LOG_DEBUG << "Erasing connection of player " << playerId << "...";
             auto result = _connectionMap.erase(playerId);
             LOG_DEBUG << "Erased " << result << " connections.";
+
             // TODO: Remove debugging logs
             string playerList;
             for (const auto &[_playerId, _]: _connectionMap) {
@@ -77,7 +77,7 @@ WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t playerId) {
         if (!wsConnPtr->connected() || !wsConnPtr->getContext<PlayerBase>()) {
             LOG_DEBUG << "Invalid player: " << playerId;
             lock.unlock();
-            unsubscribe(playerId, false);
+            unsubscribe(wsConnPtr);
             throw MessageException(i18n("playerInvalid"));
         }
         return wsConnPtr;
