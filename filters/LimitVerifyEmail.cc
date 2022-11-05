@@ -2,7 +2,7 @@
 // Created by particleg on 2021/9/27.
 //
 
-#include <filters/LimitEmail.h>
+#include <filters/LimitVerifyEmail.h>
 #include <helpers/RequestJson.h>
 #include <helpers/ResponseJson.h>
 #include <plugins/PlayerManager.h>
@@ -15,14 +15,14 @@ using namespace techmino::plugins;
 using namespace techmino::structures;
 using namespace techmino::types;
 
-void LimitEmail::doFilter(
+void LimitVerifyEmail::doFilter(
         const HttpRequestPtr &req,
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
 ) {
     auto requestJson = req->attributes()->get<RequestJson>("requestJson");
     try {
-        if (!app().getPlugin<PlayerManager>()->emailLimit(requestJson["email"].asString())) {
+        if (!app().getPlugin<PlayerManager>()->verifyLimit("email", requestJson["email"].asString())) {
             ResponseJson(k429TooManyRequests, ResultCode::TooFrequent)
                     .setMessage(i18n("tooFrequent"))
                     .to(failedCb);

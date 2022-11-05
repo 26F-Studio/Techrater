@@ -26,12 +26,26 @@ namespace techmino::api::v1 {
                     "/verify/email",
                     drogon::Post,
                     "techmino::filters::AuthVerifyEmail",
-                    "techmino::filters::LimitEmail",
+                    "techmino::filters::LimitVerifyEmail",
                     "techmino::filters::LimitIp"
             );
             METHOD_ADD(Auth::seedEmail, "/seed/email", drogon::Post, "techmino::filters::AuthSeedEmail");
-            METHOD_ADD(Auth::loginEmail, "/login/email", drogon::Post, "techmino::filters::AuthLoginEmail");
-            METHOD_ADD(Auth::resetEmail, "/reset/email", drogon::Put, "techmino::filters::AuthResetEmail");
+            METHOD_ADD(
+                    Auth::loginEmail,
+                    "/login/email",
+                    drogon::Post,
+                    "techmino::filters::AuthLoginEmail",
+                    "techmino::filters::LimitLoginEmail",
+                    "techmino::filters::LimitIp"
+            );
+            METHOD_ADD(
+                    Auth::resetEmail,
+                    "/reset/email",
+                    drogon::Put,
+                    "techmino::filters::AuthResetEmail",
+                    "techmino::filters::LimitLoginEmail",
+                    "techmino::filters::LimitIp"
+            );
             METHOD_ADD(
                     Auth::migrateEmail,
                     "/migrate/email",

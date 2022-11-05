@@ -28,16 +28,20 @@ void PlayerManager::initAndStart(const Json::Value &config) {
     if (!(
             config["tokenBucket"]["ip"]["interval"].isUInt64() &&
             config["tokenBucket"]["ip"]["maxCount"].isUInt64() &&
-            config["tokenBucket"]["email"]["interval"].isUInt64() &&
-            config["tokenBucket"]["email"]["maxCount"].isUInt64()
+            config["tokenBucket"]["login"]["interval"].isUInt64() &&
+            config["tokenBucket"]["login"]["maxCount"].isUInt64() &&
+            config["tokenBucket"]["verify"]["interval"].isUInt64() &&
+            config["tokenBucket"]["verify"]["maxCount"].isUInt64()
     )) {
         LOG_ERROR << R"(Invalid tokenBucket config)";
         abort();
     }
     _ipInterval = chrono::seconds(config["tokenBucket"]["ip"]["interval"].asUInt64());
     _ipMaxCount = config["tokenBucket"]["ip"]["maxCount"].asUInt64();
-    _emailInterval = chrono::seconds(config["tokenBucket"]["email"]["interval"].asUInt64());
-    _emailMaxCount = config["tokenBucket"]["email"]["maxCount"].asUInt64();
+    _loginInterval = chrono::seconds(config["tokenBucket"]["login"]["interval"].asUInt64());
+    _loginMaxCount = config["tokenBucket"]["login"]["maxCount"].asUInt64();
+    _verifyInterval = chrono::seconds(config["tokenBucket"]["verify"]["interval"].asUInt64());
+    _verifyMaxCount = config["tokenBucket"]["verify"]["maxCount"].asUInt64();
 
     if (!(
             config["redis"]["host"].isString() &&
@@ -425,11 +429,19 @@ bool PlayerManager::ipLimit(const string &ip) const {
     );
 }
 
-bool PlayerManager::emailLimit(const string &email) const {
+bool PlayerManager::loginLimit(const string &type, const string &key) const {
     return _playerRedis->tokenBucket(
-            "email:" + email,
-            _emailInterval,
-            _emailMaxCount
+            "code:" + type + ":" + key,
+            _loginInterval,
+            _loginMaxCount
+    );
+}
+
+bool PlayerManager::verifyLimit(const string &type, const string &key) const {
+    return _playerRedis->tokenBucket(
+            "verify:" + type + ":" + key,
+            _verifyInterval,
+            _verifyMaxCount
     );
 }
 
@@ -452,3 +464,5 @@ void PlayerManager::_checkEmailCode(const string &email, const string &code) {
         );
     }
 }
+
+

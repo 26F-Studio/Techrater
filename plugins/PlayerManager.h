@@ -91,11 +91,13 @@ namespace techmino::plugins {
 
         [[nodiscard]] bool ipLimit(const std::string &ip) const;
 
-        [[nodiscard]] bool emailLimit(const std::string &email) const;
+        [[nodiscard]] bool loginLimit(const std::string &type, const std::string &key) const;
+
+        [[nodiscard]] bool verifyLimit(const std::string &type, const std::string &key) const;
 
     private:
-        std::chrono::seconds _ipInterval{}, _emailInterval{};
-        uint64_t _ipMaxCount{}, _emailMaxCount{};
+        std::chrono::seconds _ipInterval{}, _verifyInterval{}, _loginInterval{};
+        uint64_t _ipMaxCount{}, _verifyMaxCount{}, _loginMaxCount{};
 
         std::unique_ptr<techmino::structures::PlayerRedis> _playerRedis;
         drogon::orm::Mapper<drogon_model::techrater::Data> _dataMapper;

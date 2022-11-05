@@ -12,9 +12,9 @@
  * @param email: String
  */
 namespace techmino::filters {
-    class LimitEmail :
-            public drogon::HttpFilter<LimitEmail>,
-            public helpers::I18nHelper<LimitEmail> {
+    class LimitVerifyEmail :
+            public drogon::HttpFilter<LimitVerifyEmail>,
+            public helpers::I18nHelper<LimitVerifyEmail> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 
