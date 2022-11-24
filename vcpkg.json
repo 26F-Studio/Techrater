@@ -1,12 +1,12 @@
 {
     "name": "techrater",
-    "version-string": "0.1.0-dev",
+    "version-string": "1.0.0",
     "maintainers": [
         "Particle_G <particle_g@outlook.com>"
     ],
     "description": "The new centralized backend for the block stacking game <Techmino>",
     "homepage": "https://github.com/26F-Studio/Techrater",
-    "documentation": "https://github.com/26F-Studio/Techmino-Docs",
+    "documentation": "https://github.com/26F-Studio/Techrater/docs",
     "license": "LGPL-3.0",
     "dependencies": [
         "cpp-redis",
