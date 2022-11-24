@@ -70,6 +70,13 @@ void ConnectionManager::unsubscribe(const WebSocketConnectionPtr &wsConnPtr, boo
     }
 }
 
+void ConnectionManager::broadcast(const MessageJson &message) {
+    shared_lock<shared_mutex> lock(_sharedMutex);
+    for (const auto &[_, wsConnPtr]: _connectionMap) {
+        message.to(wsConnPtr);
+    }
+}
+
 WebSocketConnectionPtr ConnectionManager::getConnPtr(int64_t playerId) {
     try {
         shared_lock<shared_mutex> lock(_sharedMutex);

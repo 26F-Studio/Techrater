@@ -28,6 +28,8 @@ namespace techmino::plugins {
 
         void unsubscribe(const drogon::WebSocketConnectionPtr &wsConnPtr, bool force = false);
 
+        void broadcast(const helpers::MessageJson &message);
+
         drogon::WebSocketConnectionPtr getConnPtr(int64_t playerId);
 
         uint64_t count() const;

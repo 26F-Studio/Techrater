@@ -93,13 +93,13 @@ namespace techmino::structures {
         bool isAllReady();
 
     public:
-        const std::unique_ptr<plugins::ConnectionManager> _connectionManager{drogon::app().getPlugin<plugins::ConnectionManager>()};
         const std::string roomId{drogon::utils::getUuid()};
         std::atomic<State> state{State::Standby};
         std::atomic<uint64_t> capacity, seed;
 
     private:
         mutable std::shared_mutex _dataMutex, _playerMutex, _chatMutex;
+        plugins::ConnectionManager *_connectionManager{drogon::app().getPlugin<plugins::ConnectionManager>()};
         std::string _passwordHash;
         helpers::DataJson _info, _data;
         std::unordered_map<int64_t, WebSocketConnectionRef> _playerMap;

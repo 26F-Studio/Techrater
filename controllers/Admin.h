@@ -5,7 +5,7 @@
 #pragma once
 
 #include <drogon/HttpController.h>
-#include <plugins/PlayerManager.h>
+#include <plugins/ConnectionManager.h>
 #include <structures/ExceptionHandlers.h>
 
 namespace techmino::api::v1 {
@@ -19,12 +19,19 @@ namespace techmino::api::v1 {
         Admin();
 
         METHOD_LIST_BEGIN
-            METHOD_ADD(Admin::shutdown, "/shutdown", drogon::Post, "techmino::filters::CheckAccessToken");
+            METHOD_ADD(
+                    Admin::shutdownAfter,
+                    "/shutdown/after",
+                    drogon::Post,
+                    "techmino::filters::CheckAccessToken",
+                    "techmino::filters::CheckPermission",
+                    "techmino::filters::AdminShutdownAfter"
+            );
         METHOD_LIST_END
 
-        void shutdown(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
+        void shutdownAfter(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
 
     private:
-        plugins::PlayerManager *_playerManager;
+        plugins::ConnectionManager *_connectionManager;
     };
 }

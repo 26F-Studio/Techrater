@@ -8,6 +8,7 @@ namespace techmino::types {
     enum class Action {
         /// Global actions
         GlobalOnlineCount = 1000,
+        GlobalNotification,
 
         /// Match actions
         MatchEnd = 1100,
