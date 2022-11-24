@@ -1,14 +1,13 @@
 #define DROGON_TEST_MAIN
+
 #include <drogon/drogon_test.h>
 #include <drogon/drogon.h>
 
-DROGON_TEST(BasicTest)
-{
+DROGON_TEST(BasicTest) {
     // Add your tests here
 }
 
-int main(int argc, char** argv) 
-{
+int main(int argc, char **argv) {
     using namespace drogon;
 
     std::promise<void> p1;
@@ -25,7 +24,7 @@ int main(int argc, char** argv)
     f1.get();
     int status = test::run(argc, argv);
 
-    // Ask the event loop to shutdown and wait
+    // Ask the event loop to shut down and wait
     app().getLoop()->queueInLoop([]() { app().quit(); });
     thr.join();
     return status;
