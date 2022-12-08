@@ -34,7 +34,7 @@ find_package(magic_enum CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        cryptopp-static
+        cryptopp::cryptopp
         Drogon::Drogon
         magic_enum::magic_enum
         ${CPPREDIS_LIB}

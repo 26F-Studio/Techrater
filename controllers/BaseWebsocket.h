@@ -41,12 +41,17 @@ namespace techmino::ws::v1 {
 
             switch (type) {
                 case WebSocketMessageType::Text:
-                case WebSocketMessageType::Binary: {
-                    auto request = BasicJson(message);
-                    LOG_TRACE << request.stringify("  ");
-                    requestHandler(wsConnPtr, request.ref());
+                case WebSocketMessageType::Binary:
+                    try {
+                        auto request = BasicJson(message);
+                        LOG_TRACE << request.stringify("  ");
+                        requestHandler(wsConnPtr, request.ref());
+                    } catch (const Json::RuntimeError &) {
+                        MessageJson(ErrorNumber::Failed)
+                                .setMessage(I18nHelper<controllerImpl>::i18n("invalidMessage"))
+                                .to(wsConnPtr);
+                    }
                     break;
-                }
                 case WebSocketMessageType::Ping:
                     wsConnPtr->send(message, WebSocketMessageType::Pong);
                     break;
