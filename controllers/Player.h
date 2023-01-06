@@ -20,27 +20,6 @@ namespace techmino::api::v1 {
 
         METHOD_LIST_BEGIN
             METHOD_ADD(
-                    Player::getAvatar,
-                    "/avatar",
-                    drogon::Get,
-                    "techmino::filters::GetAccessToken",
-                    "techmino::filters::CheckPlayerId"
-            );
-            METHOD_ADD(
-                    Player::getInfo,
-                    "/info",
-                    drogon::Get,
-                    "techmino::filters::GetAccessToken",
-                    "techmino::filters::CheckPlayerId"
-            );
-            METHOD_ADD(
-                    Player::updateInfo,
-                    "/info",
-                    drogon::Put,
-                    "techmino::filters::CheckAccessToken",
-                    "techmino::filters::PlayerUpdateInfo"
-            );
-            METHOD_ADD(
                     Player::getData,
                     "/data",
                     drogon::Get,
@@ -55,12 +34,6 @@ namespace techmino::api::v1 {
                     "techmino::filters::PlayerUpdateData"
             );
         METHOD_LIST_END
-
-        void getAvatar(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void getInfo(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void updateInfo(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
 
         void getData(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
 

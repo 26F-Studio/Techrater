@@ -8,6 +8,7 @@
 
 namespace techmino::types {
     enum class ResultCode : uint32_t {
+        Unknown = 0,
         // Message codes (100 ~ 199)
 
         // Success codes (200 ~ 299)
@@ -28,6 +29,7 @@ namespace techmino::types {
         // Error codes (500 ~ 599)
         InternalError = 500,
         DatabaseError = 501,
-        EmailError = 502,
+        NetworkError = 502,
+        EmailError = 503,
     };
 }

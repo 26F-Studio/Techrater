@@ -9,16 +9,17 @@
     "documentation": "https://github.com/26F-Studio/Techrater/docs",
     "license": "LGPL-3.0",
     "dependencies": [
-        "cpp-redis",
         "cryptopp",
         {
             "name": "drogon",
             "default-features": false,
             "features": [
                 "orm",
-                "postgres"
+                "postgres",
+                "redis"
             ]
         },
-        "magic-enum"
+        "magic-enum",
+        "range-v3"
     ]
 }

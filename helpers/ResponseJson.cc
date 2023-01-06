@@ -4,17 +4,27 @@
 
 #include <helpers/ResponseJson.h>
 #include <magic_enum.hpp>
+#include <structures/Exceptions.h>
 
 using namespace drogon;
 using namespace magic_enum;
 using namespace std;
 using namespace techmino::helpers;
+using namespace techmino::structures;
 using namespace techmino::types;
 
 ResponseJson::ResponseJson(
         HttpStatusCode statusCode,
         ResultCode resultCode
 ) : BasicJson(), _statusCode(statusCode) { setResultCode(resultCode); }
+
+ResponseJson::ResponseJson(const HttpResponsePtr &res) {
+    auto object = res->getJsonObject();
+    if (!object) {
+        throw json_exception::InvalidFormat(res->getJsonError());
+    }
+    _value = std::move(*object);
+}
 
 ResponseJson &ResponseJson::setResultCode(ResultCode code) {
     setResultCode(enum_integer(code));

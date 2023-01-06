@@ -5,6 +5,7 @@
 #pragma once
 
 #include <drogon/drogon.h>
+#include <magic_enum.hpp>
 #include <helpers/I18nHelper.h>
 #include <helpers/MessageJson.h>
 #include <helpers/RequestJson.h>
@@ -116,5 +117,76 @@ namespace techmino::structures {
         }
 
         virtual ~MessageJsonHandler() = default;
+    };
+
+    template<class T>
+    class HttpRequestHandler : public helpers::I18nHelper<T> {
+    public:
+        HttpRequestHandler() = default;
+
+        [[maybe_unused]] HttpRequestHandler(const std::string &ip, uint16_t port) :
+                httpClient(drogon::HttpClient::newHttpClient(ip, port)),
+                httpsClient(drogon::HttpClient::newHttpClient(ip, port, true)) {}
+
+        [[nodiscard]] helpers::ResponseJson request(
+                drogon::HttpMethod method,
+                const std::string &path,
+                const std::vector<std::pair<std::string, types::JsonValue>> &constraints = {},
+                const std::vector<std::pair<std::string, std::string>> &headers = {},
+                const Json::Value &body = Json::nullValue,
+                bool useSsl = true
+        ) const {
+            using namespace drogon;
+            using namespace helpers;
+            using namespace magic_enum;
+            using namespace std;
+            using namespace structures;
+            using namespace types;
+
+            auto req = body.isNull() ? HttpRequest::newHttpRequest() : HttpRequest::newHttpJsonRequest(body);
+            req->setPath(path);
+            req->setMethod(method);
+            for (const auto &header: headers) {
+                req->addHeader(header.first, header.second);
+            }
+            auto [result, responsePtr] = useSsl ? httpsClient->sendRequest(req, 10) : httpClient->sendRequest(req, 10);
+            if (result != ReqResult::Ok) {
+                throw ResponseException(
+                        I18nHelper<T>::i18n("networkError"),
+                        ResultCode::NetworkError,
+                        drogon::k503ServiceUnavailable
+                );
+            }
+            RequestJson response{responsePtr};
+            if (responsePtr->statusCode() != k200OK) {
+                throw ResponseException(
+                        response["message"].asString(),
+                        enum_cast<ResultCode>(response["code"].asUInt()).value_or(ResultCode::Unknown),
+                        responsePtr->statusCode()
+                );
+            }
+            try {
+                for (const auto &constraint: constraints) {
+                    response.require(constraint.first, constraint.second);
+                }
+            } catch (const exception &e) {
+                throw ResponseException(
+                        I18nHelper<T>::i18n("networkError"),
+                        ResultCode::NetworkError,
+                        drogon::k503ServiceUnavailable
+                );
+            }
+            return {ResponseJson{responsePtr}};
+        }
+
+        ~HttpRequestHandler() override = default;
+
+    protected:
+        drogon::HttpClientPtr httpClient, httpsClient;
+
+        void setClient(const std::string &ip, uint16_t port) {
+            httpClient = drogon::HttpClient::newHttpClient(ip, port);
+            httpsClient = drogon::HttpClient::newHttpClient(ip, port, true);
+        }
     };
 }

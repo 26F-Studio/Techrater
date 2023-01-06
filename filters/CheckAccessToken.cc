@@ -31,7 +31,7 @@ void CheckAccessToken::doFilter(
     try {
         req->attributes()->insert(
                 "playerId",
-                app().getPlugin<PlayerManager>()->getPlayerId(accessToken)
+                app().getPlugin<PlayerManager>()->getPlayerIdByAccessToken(accessToken)
         );
     } catch (const ResponseException &e) {
         e.toJson().to(failedCb);

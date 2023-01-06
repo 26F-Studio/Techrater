@@ -17,102 +17,23 @@ using namespace techmino::types;
 
 Auth::Auth() : _playerManager(app().getPlugin<PlayerManager>()) {}
 
+void Auth::oauth(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
+    ResponseJson response;
+    handleExceptions([&]() {
+        auto responseJson = req->attributes()->get<ResponseJson>("responseJson");
+        _playerManager->oauth(
+                responseJson["playerId"].asInt64(),
+                responseJson["accessToken"].asString(),
+                chrono::milliseconds(responseJson["expiration"].asUInt64())
+        );
+    }, response);
+    response.to(callback);
+}
+
 void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
         response.setData(req->attributes()->get<int64_t>("playerId"));
-    }, response);
-    response.to(callback);
-}
-
-void Auth::refresh(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        response.setData(_playerManager->refresh(
-                req->attributes()->get<string>("refreshToken")
-        ).parse());
-    }, response);
-    response.to(callback);
-}
-
-void Auth::verifyEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        _playerManager->verifyEmail(
-                req->attributes()->get<RequestJson>("requestJson")["email"].asString(),
-                callback
-        );
-    }, response);
-}
-
-void Auth::seedEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        response.setData(_playerManager->seedEmail(
-                req->attributes()->get<RequestJson>("requestJson")["email"].asString()
-        ));
-    }, response);
-    response.to(callback);
-}
-
-void Auth::loginEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        auto request = req->attributes()->get<RequestJson>("requestJson");
-        if (request.check("code", JsonValue::String)) {
-            const auto &[tokens, isNew] = _playerManager->loginEmailCode(
-                    request["email"].asString(),
-                    request["code"].asString()
-            );
-            if (isNew) {
-                response.setResultCode(ResultCode::Continued);
-            }
-            response.setData(tokens.parse());
-        } else {
-            const auto &tokens = _playerManager->loginEmailPassword(
-                    request["email"].asString(),
-                    request["password"].asString()
-            );
-            response.setData(tokens.parse());
-        }
-    }, response);
-    response.to(callback);
-}
-
-void Auth::resetEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        auto request = req->attributes()->get<RequestJson>("requestJson");
-        _playerManager->resetEmail(
-                request["email"].asString(),
-                request["code"].asString(),
-                request["newPassword"].asString()
-        );
-    }, response);
-    response.to(callback);
-}
-
-void Auth::migrateEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        auto request = req->attributes()->get<RequestJson>("requestJson");
-        _playerManager->migrateEmail(
-                req->attributes()->get<int64_t>("playerId"),
-                request["newEmail"].asString(),
-                request["code"].asString()
-        );
-    }, response);
-    response.to(callback);
-}
-
-void Auth::deactivateEmail(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        auto request = req->attributes()->get<RequestJson>("requestJson");
-        _playerManager->deactivateEmail(
-                req->attributes()->get<int64_t>("playerId"),
-                request["code"].asString()
-        );
     }, response);
     response.to(callback);
 }

@@ -17,6 +17,8 @@ namespace techmino::helpers {
                 types::ResultCode resultCode = types::ResultCode::Completed
         );
 
+        explicit ResponseJson(const drogon::HttpResponsePtr &res);
+
         ResponseJson &setResultCode(types::ResultCode code);
 
         ResponseJson &setResultCode(uint32_t code);

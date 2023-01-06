@@ -5,72 +5,85 @@
 #pragma once
 
 #include <drogon/drogon.h>
-#include <cpp_redis/cpp_redis>
 
 namespace techmino::helpers {
-    class RedisHelper : public trantor::NonCopyable {
+    class RedisHelper {
     public:
-        explicit RedisHelper(std::string BaseKey = CMAKE_PROJECT_NAME);
+        explicit RedisHelper(std::string BaseKey);
 
-        void connect(
-                const std::string &host = "127.0.0.1",
-                size_t port = 6379,
-                int db = 0,
-                uint32_t timeout = 0,
-                int32_t retries = 0,
-                uint32_t interval = 0
-        );
+        virtual ~RedisHelper();
 
-        void disconnect();
+    protected:
+        template<typename T>
+        using KeyPair = std::pair<std::string, T>;
 
-        [[nodiscard]] bool tokenBucket(
+        template<typename T>
+        using KeyPairs = std::vector<KeyPair<T>>;
+
+        using SimpleResult = std::pair<bool, std::string>;
+
+        using SimpleResults = std::vector<SimpleResult>;
+
+        static constexpr auto voidCb =
+                [](const drogon::nosql::RedisResult &result) {};
+        static constexpr auto traceCb =
+                [](const drogon::nosql::RedisResult &result) {
+                    LOG_TRACE << result.getStringForDisplayingWithIndent();
+                };
+        static constexpr auto errorCb =
+                [](const std::exception &error) {
+                    LOG_ERROR << error.what();
+                };
+        static constexpr auto intCb =
+                [](const drogon::nosql::RedisResult &result) -> int64_t {
+                    return result.asInteger();
+                };
+        static constexpr auto stringCb =
+                [](const drogon::nosql::RedisResult &result) -> std::string {
+                    return result.asString();
+                };
+        static constexpr auto simpleCb =
+                [](const drogon::nosql::RedisResult &result) -> SimpleResult {
+                    return {result.asString() == "OK", result.asString()};
+                };
+
+        bool tokenBucket(
                 const std::string &key,
                 const std::chrono::microseconds &restoreInterval,
                 const uint64_t &maxCount
         );
 
-        virtual ~RedisHelper() = default;
+        int64_t del(const std::string &key);
 
-    protected:
-        void del(const std::string &key);
+        bool exists(const std::string &key);
 
-        std::vector<bool> exists(const std::vector<std::string> &keys);
+        [[maybe_unused]] bool expire(const std::string &key, const std::chrono::seconds &ttl);
 
-        void expire(const std::string &key, const std::chrono::seconds &ttl);
+        [[maybe_unused]] std::vector<bool> expire(const KeyPairs<std::chrono::seconds> &params);
 
-        void expire(const std::vector<std::tuple<std::string, std::chrono::seconds>> &params);
+        std::vector<bool> pExpire(const KeyPairs<std::chrono::milliseconds> &params);
 
         std::string get(const std::string &key);
 
-        void setAdd(const std::string &key, const std::vector<std::string> &values);
+        int64_t incrBy(const std::string &key, const int64_t &value = 1);
 
-        void setAdd(const std::vector<std::pair<std::string, std::vector<std::string>>> &params);
+        int64_t decrBy(const std::string &key, const int64_t &value = 1);
 
-        int64_t setCard(const std::string &key);
+        SimpleResult set(const std::string &key, const std::string &value);
 
-        std::vector<std::string> setGetMembers(const std::string &key);
+        SimpleResults set(const std::vector<std::tuple<std::string, std::string>> &params);
 
-        std::vector<std::vector<std::string>> setGetMembers(const std::vector<std::string> &keys);
+        SimpleResult setPx(const std::string &key, const std::string &value, const std::chrono::milliseconds &ttl);
 
-        bool setIsMember(const std::string &key, const std::string &value);
+        SimpleResults setPx(const std::vector<std::tuple<std::string, std::string, std::chrono::milliseconds>> &params);
 
-        void setRemove(const std::string &key, const std::vector<std::string> &values);
+        [[maybe_unused]] std::chrono::seconds ttl(const std::string &key);
 
-        void setRemove(const std::vector<std::pair<std::string, std::vector<std::string>>> &params);
-
-        void set(const std::string &key, const std::string &value);
-
-        void setEx(
-                const std::string &key,
-                int ttl,
-                const std::string &value
-        );
-
-        void setEx(const std::vector<std::tuple<std::string, int, std::string>> &params);
+        [[maybe_unused]] std::chrono::milliseconds pTtl(const std::string &key);
 
     private:
-        cpp_redis::client _redisClient;
         std::string _baseKey;
+        drogon::nosql::RedisClientPtr _redisClient;
     };
 }
 

@@ -26,19 +26,20 @@ endif ()
 
 add_executable(${PROJECT_NAME} main.cc)
 
-find_library(CPPREDIS_LIB cpp_redis)
-find_library(TACOPIE_LIB tacopie)
 find_package(cryptopp CONFIG REQUIRED)
 find_package(Drogon CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+find_package(range-v3 CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         cryptopp::cryptopp
         Drogon::Drogon
         magic_enum::magic_enum
-        ${CPPREDIS_LIB}
-        ${TACOPIE_LIB})
+        range-v3
+        range-v3-meta
+        range-v3::meta
+        range-v3-concepts)
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
@@ -69,5 +70,7 @@ target_sources(${PROJECT_NAME}
 
 add_subdirectory(test)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json ${CMAKE_CURRENT_SOURCE_DIR}/verifyEmail.html
-        DESTINATION ${CMAKE_BINARY_DIR})
+install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+        DESTINATION
+        ${CMAKE_BINARY_DIR})

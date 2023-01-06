@@ -19,62 +19,13 @@ namespace techmino::api::v1 {
         Auth();
 
         METHOD_LIST_BEGIN
+            ADD_METHOD_TO(Auth::oauth, "/auth/oauth", drogon::Post, "techmino::filters::AuthOauth");
             METHOD_ADD(Auth::check, "/check", drogon::Get, "techmino::filters::CheckAccessToken");
-            METHOD_ADD(Auth::refresh, "/refresh", drogon::Get, "techmino::filters::CheckRefreshToken");
-            METHOD_ADD(
-                    Auth::verifyEmail,
-                    "/verify/email",
-                    drogon::Post,
-                    "techmino::filters::AuthVerifyEmail",
-                    "techmino::filters::LimitVerifyEmail",
-                    "techmino::filters::LimitIp"
-            );
-            METHOD_ADD(Auth::seedEmail, "/seed/email", drogon::Post, "techmino::filters::AuthSeedEmail");
-            METHOD_ADD(
-                    Auth::loginEmail,
-                    "/login/email",
-                    drogon::Post,
-                    "techmino::filters::AuthLoginEmail",
-                    "techmino::filters::LimitLoginEmail",
-                    "techmino::filters::LimitIp"
-            );
-            METHOD_ADD(
-                    Auth::resetEmail,
-                    "/reset/email",
-                    drogon::Put,
-                    "techmino::filters::AuthResetEmail",
-                    "techmino::filters::LimitLoginEmail",
-                    "techmino::filters::LimitIp"
-            );
-            METHOD_ADD(
-                    Auth::migrateEmail,
-                    "/migrate/email",
-                    drogon::Put,
-                    "techmino::filters::CheckAccessToken",
-                    "techmino::filters::AuthMigrateEmail");
-            METHOD_ADD(
-                    Auth::deactivateEmail,
-                    "/deactivate/email",
-                    drogon::Post,
-                    "techmino::filters::CheckAccessToken",
-                    "techmino::filters::AuthDeactivateEmail");
         METHOD_LIST_END
 
+        void oauth(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
+
         void check(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void refresh(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void verifyEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void seedEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void loginEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void resetEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void migrateEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
-
-        void deactivateEmail(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
 
     private:
         plugins::PlayerManager *_playerManager;

@@ -15,39 +15,6 @@ using namespace techmino::types;
 
 Player::Player() : _playerManager(app().getPlugin<PlayerManager>()) {}
 
-void Player::getAvatar(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        response.setData(_playerManager->getAvatar(
-                req->attributes()->get<string>("accessToken"),
-                req->attributes()->get<int64_t>("playerId")
-        ));
-    }, response);
-    response.to(callback);
-}
-
-void Player::getInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        response.setData(_playerManager->getPlayerInfo(
-                req->attributes()->get<string>("accessToken"),
-                req->attributes()->get<int64_t>("playerId")
-        ));
-    }, response);
-    response.to(callback);
-}
-
-void Player::updateInfo(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
-    ResponseJson response;
-    handleExceptions([&]() {
-        _playerManager->updatePlayerInfo(
-                req->attributes()->get<int64_t>("playerId"),
-                req->attributes()->get<RequestJson>("requestJson")
-        );
-    }, response);
-    response.to(callback);
-}
-
 void Player::getData(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
     handleExceptions([&]() {
