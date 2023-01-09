@@ -29,10 +29,11 @@ void CheckAccessToken::doFilter(
         return;
     }
     try {
-        req->attributes()->insert(
-                "playerId",
-                app().getPlugin<PlayerManager>()->getPlayerIdByAccessToken(accessToken)
-        );
+        const auto [playerId, newAccessToken] = app().getPlugin<PlayerManager>()->getPlayerIdByAccessToken(accessToken);
+        if (newAccessToken.has_value()) {
+            req->attributes()->insert("accessToken", newAccessToken.value());
+        }
+        req->attributes()->insert("playerId", playerId);
     } catch (const ResponseException &e) {
         e.toJson().to(failedCb);
         return;

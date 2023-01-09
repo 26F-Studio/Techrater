@@ -184,9 +184,9 @@ namespace techmino::structures {
     protected:
         drogon::HttpClientPtr httpClient, httpsClient;
 
-        void setClient(const std::string &ip, uint16_t port) {
-            httpClient = drogon::HttpClient::newHttpClient(ip, port);
-            httpsClient = drogon::HttpClient::newHttpClient(ip, port, true);
+        void setClient(const std::string &host) {
+            httpClient = drogon::HttpClient::newHttpClient(host);
+            httpsClient = drogon::HttpClient::newHttpClient(host, nullptr, false, true);
         }
     };
 }

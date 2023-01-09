@@ -42,6 +42,14 @@ void PlayerManager::initAndStart(const Json::Value &config) {
     _verifyInterval = chrono::seconds(config["tokenBucket"]["verify"]["interval"].asUInt64());
     _verifyMaxCount = config["tokenBucket"]["verify"]["maxCount"].asUInt64();
 
+    if (!(
+            config["auth"]["host"].isString()
+    )) {
+        LOG_ERROR << R"(Invalid auth config)";
+        abort();
+    }
+    _authAddress = config["auth"]["host"].asString();
+
     LOG_INFO << "PlayerManager loaded.";
 }
 
@@ -49,21 +57,35 @@ void PlayerManager::shutdown() {
     LOG_INFO << "PlayerManager shutdown.";
 }
 
-void PlayerManager::oauth(int64_t playerId, const string &accessToken, chrono::milliseconds expiration) {
-    setPx("auth:access-id:" + accessToken, to_string(playerId), expiration);
-}
-
-int64_t PlayerManager::getPlayerIdByAccessToken(const string &accessToken) {
-    try {
-        return stoll(get("auth:access-id:" + accessToken));
-    } catch (const redis_exception::KeyNotFound &e) {
+pair<int64_t, optional<string>> PlayerManager::getPlayerIdByAccessToken(const string &accessToken) {
+    setClient(_authAddress);
+    const auto response = request(
+            Get,
+            "/auth/check",
+            {
+                    {"code", JsonValue::UInt64},
+                    {"data", JsonValue::Object},
+            },
+            {{"x-access-token", accessToken}},
+            Json::nullValue,
+            false
+    );
+    if (response["code"].asUInt64() / 100 != 2) {
         throw ResponseException(
-                i18n("invalidAccessToken"),
-                e,
-                ResultCode::NotFound,
-                drogon::k404NotFound
+                response["message"].isString() ? response["message"].asString() : i18n("invalidResponse"),
+                internal::BaseException(
+                        response["reason"].isString() ? response["reason"].asString() : "Unknown error"
+                ),
+                enum_cast<ResultCode>(response["code"].asUInt64()).value_or(ResultCode::Unknown),
+                k406NotAcceptable
         );
     }
+    return {
+            response["playerId"].asInt64(),
+            response["code"].asUInt64() == enum_integer(ResultCode::Continued) ?
+            optional<string>{response["accessToken"].asString()} :
+            optional<string>{nullopt}
+    };
 }
 
 Json::Value PlayerManager::getPlayerData(
@@ -72,7 +94,7 @@ Json::Value PlayerManager::getPlayerData(
 ) {
     int64_t targetId = playerId;
     NO_EXCEPTION(
-            targetId = getPlayerIdByAccessToken(accessToken);
+            targetId = getPlayerIdByAccessToken(accessToken).first;
     )
     try {
         auto data = _dataMapper.findOne(orm::Criteria(

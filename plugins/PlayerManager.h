@@ -27,9 +27,7 @@ namespace techmino::plugins {
 
         void shutdown() override;
 
-        void oauth(int64_t playerId, const std::string &accessToken, std::chrono::milliseconds expiration);
-
-        int64_t getPlayerIdByAccessToken(const std::string &accessToken);
+        std::pair<int64_t, std::optional<std::string>> getPlayerIdByAccessToken(const std::string &accessToken);
 
         Json::Value getPlayerData(
                 const std::string &accessToken,
@@ -48,6 +46,7 @@ namespace techmino::plugins {
         bool verifyLimit(const std::string &type, const std::string &key);
 
     private:
+        std::string _authAddress;
         std::chrono::seconds _ipInterval{}, _verifyInterval{}, _loginInterval{};
         uint64_t _ipMaxCount{}, _verifyMaxCount{}, _loginMaxCount{};
 
