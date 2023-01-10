@@ -21,7 +21,7 @@ void CheckAccessToken::doFilter(
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
 ) {
-    const auto accessToken = req->getHeader("x-access-token");
+    auto accessToken = req->getHeader("x-access-token");
     if (accessToken.empty()) {
         ResponseJson(k400BadRequest, ResultCode::InvalidArguments)
                 .setMessage(i18n("invalidArguments"))
@@ -29,11 +29,17 @@ void CheckAccessToken::doFilter(
         return;
     }
     try {
-        const auto [playerId, newAccessToken] = app().getPlugin<PlayerManager>()->getPlayerIdByAccessToken(accessToken);
-        if (newAccessToken.has_value()) {
-            req->attributes()->insert("accessToken", newAccessToken.value());
+        const auto playerManager = app().getPlugin<PlayerManager>();
+        if (playerManager->tryRefresh(accessToken)) {
+            req->attributes()->insert(
+                    "accessToken",
+                    accessToken
+            );
         }
-        req->attributes()->insert("playerId", playerId);
+        req->attributes()->insert(
+                "playerId",
+                playerManager->getPlayerIdByAccessToken(accessToken)
+        );
     } catch (const ResponseException &e) {
         e.toJson().to(failedCb);
         return;

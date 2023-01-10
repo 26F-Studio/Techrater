@@ -27,7 +27,11 @@ namespace techmino::plugins {
 
         void shutdown() override;
 
-        std::pair<int64_t, std::optional<std::string>> getPlayerIdByAccessToken(const std::string &accessToken);
+        std::string oauth(int64_t playerId, const std::string &token);
+
+        int64_t getPlayerIdByAccessToken(const std::string &accessToken);
+
+        bool tryRefresh(std::string &accessToken);
 
         Json::Value getPlayerData(
                 const std::string &accessToken,
@@ -46,11 +50,14 @@ namespace techmino::plugins {
         bool verifyLimit(const std::string &type, const std::string &key);
 
     private:
-        std::string _authAddress;
-        std::chrono::seconds _ipInterval{}, _verifyInterval{}, _loginInterval{};
+        std::string _authToken;
+        std::chrono::seconds _ipInterval{}, _verifyInterval{}, _loginInterval{},
+                _accessExpiration{}, _refreshExpiration{};
         uint64_t _ipMaxCount{}, _verifyMaxCount{}, _loginMaxCount{};
 
         drogon::orm::Mapper<drogon_model::techrater::Data> _dataMapper;
         drogon::orm::Mapper<drogon_model::techrater::Player> _playerMapper;
+
+        std::string _generateAccessToken(const std::string &playerId);
     };
 }

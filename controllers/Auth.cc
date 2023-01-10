@@ -9,9 +9,10 @@ using namespace drogon;
 using namespace std;
 using namespace techmino::api::v1;
 using namespace techmino::helpers;
+using namespace techmino::plugins;
 using namespace techmino::types;
 
-Auth::Auth() = default;
+Auth::Auth() : _playerManager(app().getPlugin<PlayerManager>()) {}
 
 void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
     ResponseJson response;
@@ -24,6 +25,17 @@ void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr 
             response.setResultCode(ResultCode::Continued);
         }
         response.setData(data);
+    }, response);
+    response.to(callback);
+}
+
+void Auth::oauth(const HttpRequestPtr &req, function<void(const drogon::HttpResponsePtr &)> &&callback, string &&token) {
+    ResponseJson response;
+    handleExceptions([&]() {
+        response.setData(_playerManager->oauth(
+                req->attributes()->get<RequestJson>("requestJson")["playerId"].asInt64(),
+                token
+        ));
     }, response);
     response.to(callback);
 }

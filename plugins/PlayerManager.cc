@@ -25,6 +25,24 @@ PlayerManager::PlayerManager() :
 
 void PlayerManager::initAndStart(const Json::Value &config) {
     if (!(
+            config["auth"]["token"].isString()
+    )) {
+        LOG_ERROR << R"(Invalid auth config)";
+        abort();
+    }
+    _authToken = config["auth"]["token"].asString();
+
+    if (!(
+            config["expirations"]["access"].isUInt64() &&
+            config["expirations"]["refresh"].isUInt64()
+    )) {
+        LOG_ERROR << R"("Invalid expiration config")";
+        abort();
+    }
+    _accessExpiration = chrono::minutes(config["expirations"]["access"].asUInt64());
+    _refreshExpiration = chrono::minutes(config["expirations"]["refresh"].asUInt64());
+
+    if (!(
             config["tokenBucket"]["ip"]["interval"].isUInt64() &&
             config["tokenBucket"]["ip"]["maxCount"].isUInt64() &&
             config["tokenBucket"]["login"]["interval"].isUInt64() &&
@@ -42,14 +60,6 @@ void PlayerManager::initAndStart(const Json::Value &config) {
     _verifyInterval = chrono::seconds(config["tokenBucket"]["verify"]["interval"].asUInt64());
     _verifyMaxCount = config["tokenBucket"]["verify"]["maxCount"].asUInt64();
 
-    if (!(
-            config["auth"]["host"].isString()
-    )) {
-        LOG_ERROR << R"(Invalid auth config)";
-        abort();
-    }
-    _authAddress = config["auth"]["host"].asString();
-
     LOG_INFO << "PlayerManager loaded.";
 }
 
@@ -57,35 +67,57 @@ void PlayerManager::shutdown() {
     LOG_INFO << "PlayerManager shutdown.";
 }
 
-pair<int64_t, optional<string>> PlayerManager::getPlayerIdByAccessToken(const string &accessToken) {
-    setClient(_authAddress);
-    const auto response = request(
-            Get,
-            "/auth/check",
-            {
-                    {"code", JsonValue::UInt64},
-                    {"data", JsonValue::Object},
-            },
-            {{"x-access-token", accessToken}},
-            Json::nullValue,
-            false
-    );
-    if (response["code"].asUInt64() / 100 != 2) {
+string PlayerManager::oauth(int64_t playerId, const string &token) {
+    if (token != _authToken) {
         throw ResponseException(
-                response["message"].isString() ? response["message"].asString() : i18n("invalidResponse"),
-                internal::BaseException(
-                        response["reason"].isString() ? response["reason"].asString() : "Unknown error"
-                ),
-                enum_cast<ResultCode>(response["code"].asUInt64()).value_or(ResultCode::Unknown),
-                k406NotAcceptable
+                i18n("networkError"),
+                ResultCode::NetworkError,
+                drogon::k503ServiceUnavailable
         );
     }
-    return {
-            response["playerId"].asInt64(),
-            response["code"].asUInt64() == enum_integer(ResultCode::Continued) ?
-            optional<string>{response["accessToken"].asString()} :
-            optional<string>{nullopt}
-    };
+    if (!_playerMapper.count((orm::Criteria(
+            techrater::Data::Cols::_id,
+            orm::CompareOperator::EQ,
+            playerId
+    )))) {
+        throw ResponseException(
+                i18n("playerNotFound"),
+                ResultCode::NotFound,
+                k404NotFound
+        );
+    }
+    return _generateAccessToken(to_string(playerId));
+}
+
+int64_t PlayerManager::getPlayerIdByAccessToken(const string &accessToken) {
+    try {
+        return stoll(get(data::join({"auth", "access-id", accessToken}, ':')));
+    } catch (const redis_exception::KeyNotFound &e) {
+        throw ResponseException(
+                i18n("invalidAccessToken"),
+                e,
+                ResultCode::NotAcceptable,
+                k401Unauthorized
+        );
+    }
+}
+
+bool PlayerManager::tryRefresh(string &accessToken) {
+    try {
+        const auto ttl = chrono::milliseconds(pTtl(data::join({"auth", "access-id", accessToken}, ':')));
+        if (ttl < _refreshExpiration) {
+            accessToken = _generateAccessToken(to_string(getPlayerIdByAccessToken(accessToken)));
+            return true;
+        }
+        return false;
+    } catch (const redis_exception::KeyNotFound &e) {
+        throw ResponseException(
+                i18n("invalidAccessToken"),
+                e,
+                ResultCode::NotAcceptable,
+                k401Unauthorized
+        );
+    }
 }
 
 Json::Value PlayerManager::getPlayerData(
@@ -94,7 +126,7 @@ Json::Value PlayerManager::getPlayerData(
 ) {
     int64_t targetId = playerId;
     NO_EXCEPTION(
-            targetId = getPlayerIdByAccessToken(accessToken).first;
+            targetId = getPlayerIdByAccessToken(accessToken);
     )
     try {
         auto data = _dataMapper.findOne(orm::Criteria(
@@ -151,4 +183,14 @@ bool PlayerManager::verifyLimit(const string &type, const string &key) {
             _verifyInterval,
             _verifyMaxCount
     );
+}
+
+string PlayerManager::_generateAccessToken(const string &playerId) {
+    auto accessToken = crypto::blake2B(drogon::utils::getUuid());
+    setPx(
+            data::join({"auth", "access-id", accessToken}, ':'),
+            playerId,
+            _accessExpiration + _refreshExpiration
+    );
+    return accessToken;
 }
