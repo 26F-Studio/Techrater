@@ -63,7 +63,7 @@ enum class ResultCode : uint32_t {
 
 ## API Group: `Notice`
 
-### /
+### /notice
 
 #### Description
 
