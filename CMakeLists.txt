@@ -33,7 +33,7 @@ find_package(range-v3 CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        cryptopp-static
+        cryptopp
         Drogon::Drogon
         magic_enum::magic_enum
         range-v3
