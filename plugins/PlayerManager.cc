@@ -19,7 +19,7 @@ using namespace techmino::types;
 using namespace techmino::utils;
 
 PlayerManager::PlayerManager() :
-        RedisHelper("player"),
+        RedisHelper(CMAKE_PROJECT_NAME),
         _dataMapper(app().getDbClient()),
         _playerMapper(app().getDbClient()) {}
 
@@ -106,7 +106,11 @@ bool PlayerManager::tryRefresh(string &accessToken) {
     try {
         const auto ttl = chrono::milliseconds(pTtl(data::join({"auth", "access-id", accessToken}, ':')));
         if (ttl < _refreshExpiration) {
-            accessToken = _generateAccessToken(to_string(getPlayerIdByAccessToken(accessToken)));
+            const auto playerId = getPlayerIdByAccessToken(accessToken);
+            NO_EXCEPTION(
+                    del(data::join({"auth", "access-id", accessToken}, ':'));
+            )
+            accessToken = _generateAccessToken(to_string(playerId));
             return true;
         }
         return false;
