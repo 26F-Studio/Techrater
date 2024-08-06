@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 
-message(STATUS "C++ standard set to ${CMAKE_CXX_STANDARD}")
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json VCPKG_JSON)
+string(JSON VERSION_STRING GET ${VCPKG_JSON} version-string)
+message(STATUS "Project version: ${VERSION_STRING}")
 
 project(Techrater CXX)
-
-add_compile_definitions(CMAKE_PROJECT_NAME="${PROJECT_NAME}")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     message(STATUS "Compiler is Clang")
@@ -23,6 +23,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_options(/MP /utf-8)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX)
 endif ()
+
+add_compile_definitions(CMAKE_PROJECT_NAME="${PROJECT_NAME}")
+add_compile_definitions(VERSION_STRING="${VERSION_STRING}")
 
 add_executable(${PROJECT_NAME} main.cc)
 
@@ -69,8 +72,3 @@ target_sources(${PROJECT_NAME}
         ${UTIL_SRC})
 
 add_subdirectory(test)
-
-install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.json
-        DESTINATION
-        ${CMAKE_BINARY_DIR})
