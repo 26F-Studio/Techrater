@@ -7,7 +7,6 @@
 #include <structures/Player.h>
 
 using namespace drogon;
-using namespace drogon_model;
 using namespace magic_enum;
 using namespace std;
 using namespace techmino::helpers;
@@ -20,14 +19,12 @@ Player::Player(
         State state,
         Type type
 ) : PlayerBase(playerId),
-    playerInfo(orm::Mapper<techrater::Player>(app().getDbClient()).findByPrimaryKey(playerId)),
     role(role),
     state(state),
     type(type) {}
 
 Player::Player(Player &&player) noexcept:
         PlayerBase(player.playerId),
-        playerInfo(player.playerInfo),
         _customState(std::move(player._customState)),
         _config(std::move(player._config)) {
     group = player.group.load();

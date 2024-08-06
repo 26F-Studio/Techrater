@@ -16,7 +16,7 @@ void AdminShutdownAfter::doFilter(
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
 ) {
-    handleExceptions([&]() {
+    handleExceptions([&] {
         auto request = RequestJson(req);
         request.require("delay", JsonValue::Double);
         if (request["delay"].asDouble() < 0) {

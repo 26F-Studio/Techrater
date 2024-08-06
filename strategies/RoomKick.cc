@@ -31,12 +31,7 @@ optional<string> RoomKick::filter(const WebSocketConnectionPtr &wsConnPtr, Reque
     }
 
     /// @note Check if accessing current room.
-    if (request.check("roomId", JsonValue::String)) {
-        /// @note Reject if the player is not a global admin.
-        if (enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
-            return i18n("noPermission");
-        }
-    } else if (player->getRoom()) {
+    if (player->getRoom()) {
         /// @note Reject if the player's role is lower than the target.
         if (player->role < app().getPlugin<ConnectionManager>()->getConnPtr(
                 request["playerId"].asInt64()

@@ -24,7 +24,6 @@ namespace techmino::api::v1 {
                     "",
                     drogon::Post,
                     "techmino::filters::CheckAccessToken",
-                    "techmino::filters::CheckPermission",
                     "techmino::filters::NoticeCreate"
             );
             METHOD_ADD(
@@ -38,7 +37,6 @@ namespace techmino::api::v1 {
                     "",
                     drogon::Put,
                     "techmino::filters::CheckAccessToken",
-                    "techmino::filters::CheckPermission",
                     "techmino::filters::NoticeUpdate"
             );
             METHOD_ADD(
@@ -46,7 +44,6 @@ namespace techmino::api::v1 {
                     "",
                     drogon::Delete,
                     "techmino::filters::CheckAccessToken",
-                    "techmino::filters::CheckPermission",
                     "techmino::filters::NoticeDelete"
             );
         METHOD_LIST_END

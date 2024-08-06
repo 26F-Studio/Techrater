@@ -30,12 +30,7 @@ optional<string> RoomDataUpdate::filter(const WebSocketConnectionPtr &wsConnPtr,
     }
 
     /// @note Check if accessing current room.
-    if (request.check("roomId", JsonValue::String)) {
-        /// @note Reject if the player is not a global admin.
-        if (enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
-            return i18n("noPermission");
-        }
-    } else if (player->getRoom()) {
+    if (player->getRoom()) {
         /// @note Reject if the player is not a room admin.
         if (player->role < Player::Role::Admin) {
             return i18n("noPermission");

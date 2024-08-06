@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <models/Player.h>
 #include <structures/PlayerBase.h>
 #include <structures/Room.h>
 #include <shared_mutex>
@@ -70,7 +69,6 @@ namespace techmino::structures {
         void reset();
 
     public:
-        const drogon_model::techrater::Player playerInfo;
         std::atomic<uint64_t> group{0};
         std::atomic<Role> role;
         std::atomic<State> state;

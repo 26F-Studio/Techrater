@@ -8,15 +8,15 @@
 #include <structures/ExceptionHandlers.h>
 
 /**
- * @brief This filter checks "Auth::seedEmail" request body.
- * @param email: String
+ * @brief This filter checks "Auth::oauth" request body.
+ * @param playerId: Int64
  * @return requestJson: in request attributes
  */
 
 namespace techmino::filters {
-    class AuthSeedEmail :
-            public drogon::HttpFilter<AuthSeedEmail>,
-            public structures::RequestJsonHandler<AuthSeedEmail> {
+    class AuthDeactivate :
+            public drogon::HttpFilter<AuthDeactivate>,
+            public structures::RequestJsonHandler<AuthDeactivate> {
     public:
         static constexpr char projectName[] = CMAKE_PROJECT_NAME;
 

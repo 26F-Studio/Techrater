@@ -10,7 +10,6 @@
 /**
  * @brief This filter checks "Auth::oauth" request body.
  * @param playerId: Int64
- * @param accessToken: String
  * @return requestJson: in request attributes
  */
 

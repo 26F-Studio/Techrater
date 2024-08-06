@@ -24,13 +24,7 @@ RoomChat::RoomChat() : MessageHandlerBase(enum_integer(Action::RoomChat)) {}
 optional<string> RoomChat::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto &player = wsConnPtr->getContext<Player>();
 
-    /// @note Check if accessing current room.
-    if (request.check("roomId", JsonValue::String)) {
-        /// @note Reject if the player is not a global admin.
-        if (enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
-            return i18n("noPermission");
-        }
-    } else if (!player->getRoom()) {
+    if (!player->getRoom()) {
         return i18n("roomNotFound");
     }
 

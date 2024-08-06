@@ -23,10 +23,7 @@ RoomDataGet::RoomDataGet() : MessageHandlerBase(enum_integer(Action::RoomDataGet
 
 optional<string> RoomDataGet::filter(const WebSocketConnectionPtr &wsConnPtr, RequestJson &request) const {
     const auto player = wsConnPtr->getContext<Player>();
-    if (request.check("roomId", JsonValue::String) &&   /// @note Reject if the player is not a global admin
-        enum_cast<Permission>(player->playerInfo.getValueOfPermission()).value() != Permission::Admin) {
-        return i18n("noPermission");
-    } else if (!player->getRoom()) {
+    if (!player->getRoom()) {
         return i18n("roomNotFound");
     }
     return nullopt;

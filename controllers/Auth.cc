@@ -14,7 +14,7 @@ using namespace techmino::types;
 
 Auth::Auth() : _playerManager(app().getPlugin<PlayerManager>()) {}
 
-void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr &)> &&callback) {
+void Auth::check(const HttpRequestPtr& req, function<void(const HttpResponsePtr&)>&& callback) {
     ResponseJson response;
     handleExceptions([&]() {
         Json::Value data;
@@ -29,12 +29,24 @@ void Auth::check(const HttpRequestPtr &req, function<void(const HttpResponsePtr 
     response.to(callback);
 }
 
-void Auth::oauth(const HttpRequestPtr &req, function<void(const drogon::HttpResponsePtr &)> &&callback, string &&token) {
+void Auth::deactivate(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)>&& callback,
+                      std::string&& token) const {
+    ResponseJson response;
+    handleExceptions([&]() {
+        _playerManager->deactivate(
+            req->attributes()->get<RequestJson>("requestJson")["playerId"].asInt64(),
+            token
+        );
+    }, response);
+    response.to(callback);
+}
+
+void Auth::oauth(const HttpRequestPtr& req, function<void(const HttpResponsePtr&)>&& callback, string&& token) const {
     ResponseJson response;
     handleExceptions([&]() {
         response.setData(_playerManager->oauth(
-                req->attributes()->get<RequestJson>("requestJson")["playerId"].asInt64(),
-                token
+            req->attributes()->get<RequestJson>("requestJson")["playerId"].asInt64(),
+            token
         ));
     }, response);
     response.to(callback);

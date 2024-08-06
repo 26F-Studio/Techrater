@@ -20,42 +20,8 @@
       "connectionFailed": "Connection failed"
     },
     // Filters
-    "AuthDeactivateEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
-    "AuthLoginEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
-    "AuthMigrateEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
-    "AuthResetEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
-    "AuthSeedEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
-    "AuthVerifyEmail": {
-      "invalidFormat": "Invalid json format",
-      "invalidArguments": "Invalid json types",
-      "internalError": "Internal error"
-    },
     "CheckAccessToken": {
       "invalidArguments": "Invalid arguments"
-    },
-    "CheckPermission": {
-      "noPermission": "No permission",
-      "playerNotFound": "Player not found"
     },
     "CheckRefreshToken": {
       "invalidArguments": "Invalid arguments"

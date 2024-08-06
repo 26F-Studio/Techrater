@@ -20,18 +20,25 @@ namespace techmino::api::v1 {
 
         METHOD_LIST_BEGIN
             METHOD_ADD(Auth::check, "/check", drogon::Get, "techmino::filters::CheckAccessToken");
+            METHOD_ADD(Auth::deactivate, "/deactivate/{1}", drogon::Post, "techmino::filters::AuthDeactivate");
             METHOD_ADD(Auth::oauth, "/oauth/{1}", drogon::Post, "techmino::filters::AuthOauth");
         METHOD_LIST_END
 
-        void check(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback);
+        void check(const drogon::HttpRequestPtr& req, std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+
+        void deactivate(
+            const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback,
+            std::string&& token
+        ) const;
 
         void oauth(
-                const drogon::HttpRequestPtr &req,
-                std::function<void(const drogon::HttpResponsePtr &)> &&callback,
-                std::string &&token
-        );
+            const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback,
+            std::string&& token
+        ) const;
 
     private:
-        plugins::PlayerManager *_playerManager;
+        plugins::PlayerManager* _playerManager;
     };
 }

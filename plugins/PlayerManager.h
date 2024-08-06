@@ -7,9 +7,7 @@
 #include <drogon/plugins/Plugin.h>
 #include <helpers/RedisHelper.h>
 #include <helpers/RequestJson.h>
-#include <helpers/ResponseJson.h>
 #include <models/Data.h>
-#include <models/Player.h>
 #include <structures/ExceptionHandlers.h>
 
 namespace techmino::plugins {
@@ -23,31 +21,33 @@ namespace techmino::plugins {
     public:
         PlayerManager();
 
-        void initAndStart(const Json::Value &config) override;
+        void initAndStart(const Json::Value& config) override;
 
         void shutdown() override;
 
-        std::string oauth(int64_t playerId, const std::string &token);
+        void deactivate(int64_t playerId, const std::string& token);
 
-        int64_t getPlayerIdByAccessToken(const std::string &accessToken);
+        std::string oauth(int64_t playerId, const std::string& token);
 
-        bool tryRefresh(std::string &accessToken);
+        int64_t getPlayerIdByAccessToken(const std::string& accessToken);
+
+        bool tryRefresh(std::string& accessToken);
 
         Json::Value getPlayerData(
-                const std::string &accessToken,
-                int64_t playerId
+            const std::string& accessToken,
+            int64_t playerId
         );
 
         void updatePlayerData(
-                int64_t playerId,
-                helpers::RequestJson request
+            int64_t playerId,
+            helpers::RequestJson request
         );
 
-        bool ipLimit(const std::string &ip);
+        bool ipLimit(const std::string& ip);
 
-        bool loginLimit(const std::string &type, const std::string &key);
+        bool loginLimit(const std::string& type, const std::string& key);
 
-        bool verifyLimit(const std::string &type, const std::string &key);
+        bool verifyLimit(const std::string& type, const std::string& key);
 
     private:
         std::string _authToken;
@@ -56,8 +56,7 @@ namespace techmino::plugins {
         uint64_t _ipMaxCount{}, _verifyMaxCount{}, _loginMaxCount{};
 
         drogon::orm::Mapper<drogon_model::techrater::Data> _dataMapper;
-        drogon::orm::Mapper<drogon_model::techrater::Player> _playerMapper;
 
-        std::string _generateAccessToken(const std::string &playerId);
+        std::string _generateAccessToken(const std::string& playerId);
     };
 }
