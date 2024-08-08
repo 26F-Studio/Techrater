@@ -14,13 +14,27 @@ using namespace techmino::plugins;
 using namespace techmino::structures;
 using namespace techmino::types;
 
+static string getClientIp(
+    const HttpRequestPtr& req
+) {
+    auto& xForwardedFor = req->getHeader("X-Forwarded-For");
+    if (!xForwardedFor.empty()) {
+        return xForwardedFor.substr(0, xForwardedFor.find(','));
+    }
+    auto& xRealIp = req->getHeader("X-Real-IP");
+    if (!xRealIp.empty()) {
+        return xRealIp;
+    }
+	return req->getPeerAddr().toIp();
+}
+
 void LimitIp::doFilter(
         const HttpRequestPtr &req,
         FilterCallback &&failedCb,
         FilterChainCallback &&nextCb
 ) {
     try {
-        if (!app().getPlugin<PlayerManager>()->ipLimit(req->getPeerAddr().toIp())) {
+        if (!app().getPlugin<PlayerManager>()->ipLimit(getClientIp(req))) {
             ResponseJson(k429TooManyRequests, ResultCode::TooFrequent)
                     .setMessage(i18n("tooFrequent"))
                     .to(failedCb);
